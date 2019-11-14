@@ -17,6 +17,48 @@ ATTR_POS = 1
 ROOT_POS = 2
 
 
+def get_tuple(pointer_wrapper, rel):
+    pointer = pointer_wrapper[0]
+    filename, index = pointer[:-2], int(pointer[-1])
+    with open(os.path.join(DATA_PATH, rel, filename)) as f:
+        content = f.readlines()[0]
+        data = json.loads(content)
+        tuple_ = data[index]
+
+    return tuple_
+
+
+def dfs(filename, rel, val, op):
+    res = None
+    with open(os.path.join(INDEX_PATH, filename)) as f:
+        info = f.readlines()[0]
+        data = json.loads(info)
+        if data[TYPE_POS] == "I":
+            content = data[CONTENT_POS]
+            located = False
+            for index, value in enumerate(content):
+                if not value.endswith(".txt"):
+                    if val < value:
+                        res = dfs(content[index - 1], rel, val, op)
+                        located = True
+                        break
+                    if val == value:
+                        res = dfs(content[index + 1], rel,  val, op)
+                        located = True
+                        break
+
+            if not located:
+                res = dfs(content[-1], rel,  val, op)
+        else:
+            content = data[-1]
+            for index, value in enumerate(content):
+                if isinstance(value, str) and value == val:
+                    res = get_tuple(content[index + 1], rel)
+                else:
+                    pass
+        return res
+
+
 def select(rel, att, op, val):
     res = None
     tree_root = None
@@ -28,9 +70,17 @@ def select(rel, att, op, val):
                 tree_root = tuple_[ROOT_POS]
                 break
 
+    with open(os.path.join(DATA_PATH, SCHEMAS)) as sc:
+        content = sc.readlines()[0]
+        fields = json.loads(content)
+        fields = [field for field in fields if field[0] == rel]
+        fields.sort(key=lambda x: x[3])
+        schema = [field[1] for field in fields]
+
     data = []
     if tree_root:
-        pass
+        res = dfs(tree_root, rel, val, op)
+        res = [schema] + [res]
     else:
         with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
             content = pl.readlines()[0]
@@ -40,14 +90,6 @@ def select(rel, att, op, val):
                     page_content = pg.readlines()[0]
                     page_data = json.loads(page_content)
                     data += page_data
-
-            schema = None
-            with open(os.path.join(DATA_PATH, SCHEMAS)) as sc:
-                content = sc.readlines()[0]
-                fields = json.loads(content)
-                fields = [field for field in fields if field[0] == rel]
-                fields.sort(key=lambda x: x[3])
-                schema = [field[1] for field in fields]
 
             df = pd.DataFrame(data, columns=schema)
             if op == '<':

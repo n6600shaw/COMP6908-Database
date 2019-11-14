@@ -20,18 +20,19 @@ def dfs(filename):
                 if entry.endswith(".txt"):
                     dfs(entry)
                     os.remove(os.path.join(INDEX_PATH, entry))
+                    # TODO: release the occupied pages to the page pool
 
 
 def removeTree(rel, att):
     with open(os.path.join(INDEX_PATH, INDEX_DIRECTORY)) as f:
         content = f.readlines()[0]
         tuples = json.loads(content)
-        for tuple in tuples:
-            if tuple[RELATION_POS] == rel and tuple[ATTR_POS] == att:
-                dfs(tuple[ROOT_POS])
+        for tuple_ in tuples:
+            if tuple_[RELATION_POS] == rel and tuple_[ATTR_POS] == att:
+                dfs(tuple_[ROOT_POS])
 
     with open(os.path.join(INDEX_PATH, INDEX_DIRECTORY), "w") as f:
-        res = json.dumps([tuple for tuple in tuples if tuple[RELATION_POS] != rel or tuple[ATTR_POS] != att])
+        res = json.dumps([tuple_ for tuple_ in tuples if tuple_[RELATION_POS] != rel or tuple_[ATTR_POS] != att])
         f.write(res)
 
 
