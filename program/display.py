@@ -19,7 +19,7 @@ def dfs(filename, indent_no, distfile):
                     dfs(entry, indent_no + 2, distfile)
 
 
-def displayTree(fname="page06.txt"):
+def displayTree(fname="pg06.txt"):
     indent_no = 0
     with open(os.path.join(INDEX_PATH, fname)) as root, open(os.path.join(TREE_PIC_PATH, "Suppliers_sid.txt"), "w") as tree_pic:
         content = root.readlines()[0]

@@ -5,6 +5,7 @@
 
 + [ ] relAlg.py
     - [ ] select function
+        -  [x] scan data from B+Tree or data files
         -  [x] baseline (the = operator is finished)
         -  [ ] < operator
         -  [ ] <= operator
@@ -27,3 +28,9 @@
         -  [ ] save to the appropriate file
     - [ ] displayTable function
 + [x] query.py
+    - [x] query a
+    - [x] query b
+    - [x] query c
+    - [x] query d
+    - [x] query e
+
