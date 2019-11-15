@@ -1,6 +1,30 @@
 # COMP 6908-Database
 
 
+## Analysis
+
+### clustered index
+
+Products.pid
+
+**Suppliers.sid**
+
+Supply.sid
+
+### unclustered index
+
+Products.pname
+
+Products.color
+
+Suppliers.sname
+
+Suppliers.address
+
+**Supply.pid**
+
+Supply.cost
+
 ## Checklist
 
 + [ ] relAlg.py
