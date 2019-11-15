@@ -16,6 +16,9 @@
         -  [x] baseline
         -  [ ] use B+ tree or nested-loops-page-at-a-time to join
 + [ ] buildTree.py
+    - [x] function to build b+ tree index
+    - [ ] assign pages to tree node and data records
+    - [ ] store tree index to actual txt files
 + [ ] remove.py
     - [ ] removeTree function
         -  [x] baseline
