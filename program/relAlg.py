@@ -1,27 +1,112 @@
 import json
+import os
+
 import pandas as pd
 
 
-def select(rel, att, op, val):
-    res = ""
-    with open(rel) as f:
+DATA_PATH = "../data/"
+INDEX_PATH = "../index/"
+INDEX_DIRECTORY = "directory.txt"
+PAGE_LINK = "pageLink.txt"
+SCHEMAS = "schemas.txt"
+
+TYPE_POS = 0
+CONTENT_POS = 2
+RELATION_POS = 0
+ATTR_POS = 1
+ROOT_POS = 2
+
+
+def get_tuple(pointer_wrapper, rel):
+    pointer = pointer_wrapper[0]
+    filename, index = pointer[:-2], int(pointer[-1])
+    with open(os.path.join(DATA_PATH, rel, filename)) as f:
         content = f.readlines()[0]
         data = json.loads(content)
-        df = pd.DataFrame(data[1:], columns=data[0])
-        if op == '<':
-            df = df.loc[df[att] < val]
-        elif op == '<=':
-            df = df.loc[df[att] <= val]
-        elif op == '=':
-            df = df.loc[df[att] == val]
-        elif op == '>':
-            df = df.loc[df[att] > val]
-        elif op == '>=':
-            df = df.loc[df[att] >= val]
-        else:
-            raise Exception('Invalid op value!!!')
-        res = [df.columns.values.tolist()] + df.values.tolist()
+        tuple_ = data[index]
 
+    return tuple_
+
+
+def dfs(filename, rel, val, op):
+    res = None
+    with open(os.path.join(INDEX_PATH, filename)) as f:
+        info = f.readlines()[0]
+        data = json.loads(info)
+        if data[TYPE_POS] == "I":
+            content = data[CONTENT_POS]
+            located = False
+            for index, value in enumerate(content):
+                if not value.endswith(".txt"):
+                    if val < value:
+                        res = dfs(content[index - 1], rel, val, op)
+                        located = True
+                        break
+                    if val == value:
+                        res = dfs(content[index + 1], rel,  val, op)
+                        located = True
+                        break
+
+            if not located:
+                res = dfs(content[-1], rel,  val, op)
+        else:
+            content = data[-1]
+            for index, value in enumerate(content):
+                if isinstance(value, str) and value == val:
+                    res = get_tuple(content[index + 1], rel)
+                else:
+                    pass
+        return res
+
+
+def select(rel, att, op, val):
+    res = None
+    tree_root = None
+    with open(os.path.join(INDEX_PATH, INDEX_DIRECTORY)) as id_:
+        content = id_.readlines()[0]
+        tuples = json.loads(content)
+        for tuple_ in tuples:
+            if tuple_[RELATION_POS] == rel and tuple_[ATTR_POS] == att:
+                tree_root = tuple_[ROOT_POS]
+                break
+
+    with open(os.path.join(DATA_PATH, SCHEMAS)) as sc:
+        content = sc.readlines()[0]
+        fields = json.loads(content)
+        fields = [field for field in fields if field[0] == rel]
+        fields.sort(key=lambda x: x[3])
+        schema = [field[1] for field in fields]
+
+    data = []
+    if tree_root:
+        res = dfs(tree_root, rel, val, op)
+        res = [schema] + [res]
+    else:
+        with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
+            content = pl.readlines()[0]
+            pages = json.loads(content)
+            for page in pages:
+                with open(os.path.join(DATA_PATH, rel, page)) as pg:
+                    page_content = pg.readlines()[0]
+                    page_data = json.loads(page_content)
+                    data += page_data
+
+            df = pd.DataFrame(data, columns=schema)
+            if op == '<':
+                df = df.loc[df[att] < val]
+            elif op == '<=':
+                df = df.loc[df[att] <= val]
+            elif op == '=':
+                df = df.loc[df[att] == val]
+            elif op == '>':
+                df = df.loc[df[att] > val]
+            elif op == '>=':
+                df = df.loc[df[att] >= val]
+            else:
+                raise Exception('Invalid op value!!!')
+            res = [df.columns.values.tolist()] + df.values.tolist()
+
+    # TODO: print the total number of pages read from B+ tree or from data files
     tmp_result = "../data/Temporary/tmp.txt"
     with open(tmp_result, "w") as f:
         f.write(json.dumps(res))
