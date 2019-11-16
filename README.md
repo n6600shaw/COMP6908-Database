@@ -30,11 +30,8 @@ Supply.cost
 + [ ] relAlg.py
     - [ ] select function
         -  [x] scan data from B+Tree or data files
-        -  [x] baseline (the = operator is finished)
-        -  [ ] < operator
-        -  [ ] <= operator
-        -  [ ] \> operator
-        -  [ ] \>= operator
+        -  [x] via clustered index (including operator: <, <=, =, \>, \>=)
+        -  [ ] via unclustered index
         -  [ ] print the total number of pages read from B+ tree or from data files
     - [x] project function
     - [ ] join function

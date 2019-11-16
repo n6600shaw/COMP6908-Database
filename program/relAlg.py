@@ -16,16 +16,67 @@ RELATION_POS = 0
 ATTR_POS = 1
 ROOT_POS = 2
 
+CLUSTERED_INDEX = [("Products", "pid"), ("Suppliers", "sid"), ("Supply", "sid")]
+UNCLUSTERED_INDEX = [
+    ("Products", "pname"), ("Products", "color"),
+    ("Suppliers", "sname"), ("Suppliers", "address"),
+    ("Supply", "pid"), ("Supply", "cost")
+]
 
-def get_tuple(pointer_wrapper, rel):
+
+def get_tuples(pointer_wrapper, rel, op):
     pointer = pointer_wrapper[0]
     filename, index = pointer[:-2], int(pointer[-1])
-    with open(os.path.join(DATA_PATH, rel, filename)) as f:
-        content = f.readlines()[0]
-        data = json.loads(content)
-        tuple_ = data[index]
 
-    return tuple_
+    with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
+        content = pl.readlines()[0]
+        pages = json.loads(content)
+        for idx, val in enumerate(pages):
+            if val == filename:
+                cursor = idx
+                break
+
+        res = []
+        if op in ('<', '<='):
+            for idx, val in enumerate(pages):
+                if idx == cursor:
+                    with open(os.path.join(DATA_PATH, rel, val)) as f:
+                        content = f.readlines()[0]
+                        data = json.loads(content)
+                        if op == '<' and index == 1 or op == '<=':
+                            res.append(data[0])
+
+                        if op == '<=' and index == 1:
+                            res.append(data[1])
+
+                    break
+
+                with open(os.path.join(DATA_PATH, rel, val)) as f:
+                    content = f.readlines()[0]
+                    data = json.loads(content)
+                    res += data
+        elif op in ('>', '>='):
+            for idx, val in enumerate(pages[cursor:]):
+                with open(os.path.join(DATA_PATH, rel, val)) as f:
+                    content = f.readlines()[0]
+                    data = json.loads(content)
+                    if idx == cursor:
+                        if op == '>=' and index == 0:
+                            res.append(data[0])
+
+                        if op == '>' and index == 0 or op == '>=':
+                            res.append(data[1])
+                    else:
+                        res += data
+        elif op == '=':
+            with open(os.path.join(DATA_PATH, rel, filename)) as f:
+                content = f.readlines()[0]
+                data = json.loads(content)
+                res.append(data[index])
+        else:
+            raise Exception('Invalid op value!!!')
+
+    return res
 
 
 def dfs(filename, rel, val, op):
@@ -53,7 +104,7 @@ def dfs(filename, rel, val, op):
             content = data[-1]
             for index, value in enumerate(content):
                 if isinstance(value, str) and value == val:
-                    res = get_tuple(content[index + 1], rel)
+                    res = get_tuples(content[index + 1], rel, op)
                 else:
                     pass
         return res
@@ -80,7 +131,7 @@ def select(rel, att, op, val):
     data = []
     if tree_root:
         res = dfs(tree_root, rel, val, op)
-        res = [schema] + [res]
+        res = [schema] + res
     else:
         with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
             content = pl.readlines()[0]
