@@ -38,9 +38,9 @@ def query_e():
 
 
 if __name__ == "__main__":
-    # query_a()
+    query_a()
     # query_b()
-    query_c()
+    # query_c()
     # query_d()
     # query_e()
 
