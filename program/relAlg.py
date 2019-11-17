@@ -124,7 +124,7 @@ def get_data_files(rel, node_content, res):
     return res
 
 
-def search(pointer, rel, att, res, direction=DIRECTION.LEFT):
+def search(pointer, rel, res, direction=DIRECTION.LEFT):
     with open(os.path.join(INDEX_PATH, pointer)) as f:
         node = f.readlines()[0]
         data = json.loads(node)
@@ -135,11 +135,11 @@ def search(pointer, rel, att, res, direction=DIRECTION.LEFT):
         next_pointer = data[LEAF_NODE.LEFT_POINTER.value if direction == DIRECTION.LEFT else LEAF_NODE.RIGHT_POINTER.value]
 
     if next_pointer != "nil":
-        res = search(next_pointer, rel, att, res, direction)
+        res = search(next_pointer, rel, res, direction)
     return res
 
 
-def get_tuples_by_ui(leaf_node, rel, att, val, op):
+def get_tuples_by_ui(leaf_node, rel, val, op):
     res = []
     content = leaf_node[LEAF_NODE.CONTENT.value]
     if op in ('<', '<='):
@@ -151,7 +151,7 @@ def get_tuples_by_ui(leaf_node, rel, att, val, op):
                 filename, index = pointer[:-2], int(pointer[-1])
                 res = get_single_tuple(filename, index, rel, res)
         if leaf_node[LEAF_NODE.LEFT_POINTER.value] != "nil":
-            res = search(leaf_node[LEAF_NODE.LEFT_POINTER.value], rel, att, res, DIRECTION.LEFT)
+            res = search(leaf_node[LEAF_NODE.LEFT_POINTER.value], rel, res, DIRECTION.LEFT)
     elif op in ('>', '>='):
         for index, value in enumerate(content):
             if (isinstance(value, str) and value == val and op == '>=') or (isinstance(value, str) and value > val):
@@ -160,7 +160,7 @@ def get_tuples_by_ui(leaf_node, rel, att, val, op):
                 filename, index = pointer[:-2], int(pointer[-1])
                 res = get_single_tuple(filename, index, rel, res)
         if leaf_node[LEAF_NODE.RIGHT_POINTER.value] != "nil":
-            res = search(leaf_node[LEAF_NODE.RIGHT_POINTER.value], rel, att, res, DIRECTION.RIGHT)
+            res = search(leaf_node[LEAF_NODE.RIGHT_POINTER.value], rel, res, DIRECTION.RIGHT)
     elif op == '=':
         for index, value in enumerate(content):
             if isinstance(value, str) and value == val:
@@ -174,7 +174,7 @@ def get_tuples_by_ui(leaf_node, rel, att, val, op):
     return res
 
 
-def dfs(filename, rel, att, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX):
+def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX):
     res = None
     with open(os.path.join(INDEX_PATH, filename)) as f:
         info = f.readlines()[0]
@@ -185,16 +185,16 @@ def dfs(filename, rel, att, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX):
             for index, value in enumerate(content):
                 if not value.endswith(".txt"):
                     if val < value:
-                        res = dfs(content[index - 1], rel, att, val, op, index_type)
+                        res = dfs(content[index - 1], rel, val, op, index_type)
                         located = True
                         break
                     if val == value:
-                        res = dfs(content[index + 1], rel, att, val, op, index_type)
+                        res = dfs(content[index + 1], rel, val, op, index_type)
                         located = True
                         break
 
             if not located:
-                res = dfs(content[-1], rel, att, val, op, index_type)
+                res = dfs(content[-1], rel, val, op, index_type)
         else:
             if index_type == INDEX_TYPE.CLUSTERED_INDEX:
                 content = data[LEAF_NODE.CONTENT.value]
@@ -202,7 +202,7 @@ def dfs(filename, rel, att, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX):
                     if isinstance(value, str) and value == val:
                         res = get_tuples_by_ci(content[index + 1], rel, op)
             else:
-                res = get_tuples_by_ui(data, rel, att, val, op)
+                res = get_tuples_by_ui(data, rel, val, op)
 
     return res
 
@@ -233,8 +233,13 @@ def select(rel, att, op, val):
                 index_type = INDEX_TYPE.CLUSTERED_INDEX
                 break
 
-        res = dfs(tree_root, rel, att, val, op, index_type)
+        res = dfs(tree_root, rel, val, op, index_type)
         res = [schema] + res
+        print("With B+_tree, the cost of searching {att} {op} {val} on {rel} is {value} pages".format(rel=rel,
+                                                                                                      att=att,
+                                                                                                      op=op,
+                                                                                                      val=val,
+                                                                                                      value="???"))
     else:
         with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
             content = pl.readlines()[0]
@@ -259,6 +264,12 @@ def select(rel, att, op, val):
             else:
                 raise Exception('Invalid op value!!!')
             res = [df.columns.values.tolist()] + df.values.tolist()
+
+        print("Without B+_tree, the cost of searching {att} {op} {val} on {rel} is {value} pages".format(rel=rel,
+                                                                                                         att=att,
+                                                                                                         op=op,
+                                                                                                         val=val,
+                                                                                                         value="???"))
 
     # TODO: print the total number of pages read from B+ tree or from data files
     tmp_result = "../data/Temporary/tmp.txt"
