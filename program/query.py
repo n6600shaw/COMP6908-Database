@@ -1,5 +1,7 @@
 from relAlg import select, project, join
 
+from program.remove import removeTree, removeTable
+
 SUPPLY = "Supply"
 PRODUCTS = "Products"
 SUPPLIERS = "Suppliers"
@@ -39,8 +41,14 @@ def query_e():
 
 if __name__ == "__main__":
     query_a()
+    removeTree(SUPPLIERS, "sid")
+    removeTable()
     # query_b()
+    # removeTable()
     # query_c()
+    # removeTable()
     # query_d()
+    # removeTable()
     # query_e()
+    # removeTable()
 
