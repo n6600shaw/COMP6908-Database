@@ -37,7 +37,7 @@ Supply.cost
     - [ ] join function
         -  [x] baseline
         -  [ ] use B+ tree or nested-loops-page-at-a-time to join
-+ [ ] buildTree.py
++ [x] buildTree.py
     - [x] function to build b+ tree index
     - [x] assign pages to tree node and data records
     - [x] store tree index to actual txt files
