@@ -1,6 +1,7 @@
 import json
 import ast
 import math
+import os
 
 DATA_PATH = "../data/"
 INDEX_PATH = "../index/"
@@ -64,7 +65,8 @@ class Node:
     # write tree data into files and print the tree structure
     def __print__(self, level=0):
 
-        ret = "\t" * level + repr(self.node_page + ":" + str(self.info)) + "\n"
+        # ret = "\t" * level + repr(self.node_page + ":" + str(self.info)) + "\n"
+        ret = "\t" * level + repr(self.keys) + repr(self.pointers) + "\n"
         if self.node_type != 'L':
             for pointer in self.pointers:
                 ret += pointer.__print__(level + 1)
@@ -74,7 +76,7 @@ class Node:
 def search(node, key):
     while node.node_type != 'L':
         length = len(node.keys)
-        print('keys len: ' + str(length))
+
         if key < node.keys[0]:
             node = node.pointers[0]
         elif key >= node.keys[length - 1]:
@@ -83,6 +85,7 @@ def search(node, key):
             for i in range(length - 1):
                 if node.keys[i] <= key < node.keys[i + 1]:
                     node = node.pointers[i + 1]
+                    break
     length = len(node.keys)
     index = None
     for i in range(length):
@@ -128,12 +131,21 @@ def insert(node, key, pointer, order, root):
 
 # append key and pointer
 def appendKey(node, key, pointer):
-    node.keys.append(key)
-    node.keys.sort()
+    check = False
+    if key not in node.keys:
+        check = True
+        node.keys.append(key)
+        node.keys.sort()
     index = node.keys.index(key)
     if node.node_type != 'L':
         index += 1
-    node.pointers.insert(index, pointer)
+        node.pointers.insert(index, pointer)
+    else:
+        if check:
+            node.pointers.insert(index, [pointer])
+        else:
+            node.pointers[index].append(pointer)
+
 
 
 # split node, redistribute keys and pointers
@@ -199,3 +211,4 @@ def getAttList(rel, att):
                 for record in records:
                     res.append((record[att_index], page + '.' + str(records.index(record))))
     return res
+
