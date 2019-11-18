@@ -43,9 +43,10 @@ Supply.cost
     - [x] assign pages to tree node and data records
     - [x] store tree index to actual txt files
 + [ ] remove.py
-    - [ ] removeTree function
+    - [x] removeTree function
         -  [x] baseline
-        -  [ ] release the occupied pages to the page pool
+        -  [x] release the occupied pages to the page pool
+        -  [ ] test remove tree function on real tree files generated
     - [ ] removeTable function
 + [ ] display.py
     - [ ] displayTree function
