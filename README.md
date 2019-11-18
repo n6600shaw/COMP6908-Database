@@ -35,6 +35,7 @@ Supply.cost
         -  [ ] print the total number of pages read from B+ tree or from data files
         -  [ ] fix the bug: one index value corresponds to multiple data files
     - [x] project function
+        -  [x] read from multiple pages
     - [ ] join function
         -  [x] baseline
         -  [ ] use B+ tree or nested-loops-page-at-a-time to join
@@ -47,7 +48,7 @@ Supply.cost
         -  [x] baseline
         -  [x] release the occupied pages to the page pool
         -  [ ] test remove tree function on real tree files generated
-    - [ ] removeTable function
+    - [x] removeTable function
 + [ ] display.py
     - [ ] displayTree function
         -  [x] baseline
