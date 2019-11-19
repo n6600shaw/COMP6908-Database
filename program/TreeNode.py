@@ -54,7 +54,7 @@ class Node:
         # write node info to page
 
         with open(INDEX_PATH + self.node_page, 'w') as f:
-            f.write(str(self.info))
+            f.write(json.dumps(self.info))
 
 
         # go to children nodes
@@ -180,13 +180,14 @@ def getPage():
 
     # get page from page pool
     with open(path) as f:
-        page_pool = ast.literal_eval(f.read())
+        page_pool = json.loads(f.read())
         if page_pool:
             page = page_pool.pop(0)
 
     # update page pool
     with open(path, 'w') as f:
-        f.write(str(page_pool))
+        res = json.dumps(page_pool)
+        f.write(res)
     return page
 
 

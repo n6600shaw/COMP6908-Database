@@ -4,7 +4,7 @@ import ast
 
 INDEX_PATH = "../index/"
 INDEX_DIRECTORY = "directory.txt"
-INDEX_PAGE_POOL = "pagePool.txt"
+PAGE_POOL = "pagePool.txt"
 
 TYPE_POS = 0
 CONTENT_POS = 2
@@ -26,12 +26,12 @@ def dfs(filename):
                     os.remove(os.path.join(INDEX_PATH, entry))
 
             # TODO: release the occupied pages to the page pool
-            with open(os.path.join(INDEX_PATH, INDEX_PAGE_POOL)) as df:
-                page_pool = ast.literal_eval(df.readlines()[0])
+            with open(os.path.join(INDEX_PATH, PAGE_POOL)) as df:
+                page_pool = json.dumps(df.readlines()[0])
                 page_pool.extend(pages)
                 page_pool.sort(reverse=True)
-            with open(os.path.join(INDEX_PATH, INDEX_PAGE_POOL),'w') as df:
-                df.write(page_pool)
+            with open(os.path.join(INDEX_PATH, PAGE_POOL),'w') as df:
+                df.write(json.dumps(page_pool))
 
 
 

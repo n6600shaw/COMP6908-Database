@@ -1,1 +1,1 @@
-['L', 'pg84.txt', 'pg86.txt', 'pg81.txt', ['s20', ['page09.txt.1'], 's21', ['page10.txt.0']]]
+["L", "pg84.txt", "pg86.txt", "pg81.txt", ["s20", ["page09.txt.1"], "s21", ["page10.txt.0"]]]

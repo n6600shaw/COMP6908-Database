@@ -1,1 +1,1 @@
-['L', 'pg97.txt', 'nil', 'pg98.txt', ['s01', ['page00.txt.0']]]
+["L", "pg97.txt", "nil", "pg98.txt", ["s01", ["page00.txt.0"]]]

@@ -1,4 +1,5 @@
 import TreeNode as tn
+import json
 import ast
 import math
 
@@ -22,7 +23,7 @@ def buildTree(rel, att, od):
     root.__write__()
 
     with open(INDEX_PATH + 'directory.txt') as f:
-        directory = ast.literal_eval(f.read())
+        directory = json.loads(f.read())
 
     # update directory
     with open(INDEX_PATH + 'directory.txt', 'w') as f:
@@ -31,7 +32,7 @@ def buildTree(rel, att, od):
         tree.append(att)
         tree.append(root.node_page)
         directory.append(tree)
-        f.write(str(directory))
+        f.write(json.dumps(directory))
     print(root.__print__())
 
 
