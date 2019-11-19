@@ -1,5 +1,5 @@
-from relAlg import select, project, join
-
+from program.relAlg import select, project, join
+from program.display import displayTable
 from program.remove import removeTree, removeTable
 
 SUPPLY = "Supply"
@@ -8,15 +8,15 @@ SUPPLIERS = "Suppliers"
 
 
 def query_a():
-    tmp_result = select(SUPPLIERS, "sid", "=", "s23")
+    tmp_result = select(SUPPLIERS, "sid", "<=", "s23")
     query_result = project(tmp_result, ["sname"])
-    print(query_result)
+    return query_result
 
 
 def query_b():
     tmp_result = select(SUPPLIERS, "sid", "=", "s23")
     query_result = project(tmp_result, ["sname"])
-    print(query_result)
+    return query_result
 
 
 def query_c():
@@ -27,8 +27,8 @@ def query_c():
 
 def query_d():
     tmp_result = select(SUPPLIERS, "sname", "=", "Kiddie")
-    tmp_result = join(tmp_result, "sid", SUPPLY, "sid")
     tmp_result = select(tmp_result, "pid", "=", "p20")
+    tmp_result = join(tmp_result, "sid", SUPPLY, "sid")
     project(tmp_result, ["cost"])
 
 
@@ -40,9 +40,10 @@ def query_e():
 
 
 if __name__ == "__main__":
-    query_a()
+    res = query_a()
+    displayTable(res, "XXX.txt")
+    removeTable(res)
     removeTree(SUPPLIERS, "sid")
-    removeTable()
     # query_b()
     # removeTable()
     # query_c()

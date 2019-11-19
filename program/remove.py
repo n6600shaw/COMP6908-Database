@@ -1,7 +1,9 @@
 import json
 import os
+import shutil
 import ast
 
+DATA_PATH = "../data/"
 INDEX_PATH = "../index/"
 INDEX_DIRECTORY = "directory.txt"
 PAGE_POOL = "pagePool.txt"
@@ -35,9 +37,6 @@ def dfs(filename):
 
 
 
-
-
-
 def removeTree(rel, att):
     with open(os.path.join(INDEX_PATH, INDEX_DIRECTORY)) as f:
         content = f.readlines()[0]
@@ -54,8 +53,22 @@ def removeTree(rel, att):
 
 
 def removeTable(rel):
-    pass
+    path = os.path.join(DATA_PATH, rel)
+    if os.path.exists(path):
+        page_files = []
+        for (dirpath, dirnames, filenames) in os.walk(path):
+            page_files = filenames
+
+        with open(os.path.join(DATA_PATH, PAGE_POOL)) as pp:
+            content = pp.readlines()[0]
+            page_pool = json.loads(content)
+
+        with open(os.path.join(DATA_PATH, PAGE_POOL), "w") as pp:
+            res = json.dumps(page_pool + page_files)
+            pp.write(res)
+
+        shutil.rmtree(path)
 
 
 if __name__ == "__main__":
-    removeTree("Suppliers", "sid")
+    removeTable("Sup_sna")

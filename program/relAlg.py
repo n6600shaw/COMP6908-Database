@@ -10,12 +10,15 @@ INDEX_PATH = "../index/"
 INDEX_DIRECTORY = "directory.txt"
 PAGE_LINK = "pageLink.txt"
 SCHEMAS = "schemas.txt"
+PAGE_POOL = "pagePool.txt"
 
 TYPE_POS = 0
 CONTENT_POS = 2
 RELATION_POS = 0
 ATTR_POS = 1
 ROOT_POS = 2
+
+CAPACITY = 2
 
 
 class INTERNAL_NODE(Enum):
@@ -207,6 +210,22 @@ def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX):
     return res
 
 
+def get_page():
+    # get page from page pool
+    with open(os.path.join(DATA_PATH, PAGE_POOL)) as pp:
+        content = pp.readlines()[0]
+        page_pool = json.loads(content)
+        if page_pool:
+            page = page_pool.pop(0)
+        else:
+            raise Exception("Run out of pages!!!")
+
+    # update page pool
+    with open(os.path.join(DATA_PATH, PAGE_POOL), 'w') as f:
+        f.write(json.dumps(page_pool))
+    return page
+
+
 def select(rel, att, op, val):
     res = None
     tree_root = None
@@ -218,12 +237,7 @@ def select(rel, att, op, val):
                 tree_root = tuple_[ROOT_POS]
                 break
 
-    with open(os.path.join(DATA_PATH, SCHEMAS)) as sc:
-        content = sc.readlines()[0]
-        fields = json.loads(content)
-        fields = [field for field in fields if field[0] == rel]
-        fields.sort(key=lambda x: x[3])
-        schema = [field[1] for field in fields]
+    schema = get_schema(rel)
 
     data = []
     if tree_root:
@@ -234,7 +248,6 @@ def select(rel, att, op, val):
                 break
 
         res = dfs(tree_root, rel, val, op, index_type)
-        res = [schema] + res
         print("With B+_tree, the cost of searching {att} {op} {val} on {rel} is {value} pages".format(rel=rel,
                                                                                                       att=att,
                                                                                                       op=op,
@@ -263,7 +276,7 @@ def select(rel, att, op, val):
                 df = df.loc[df[att] >= val]
             else:
                 raise Exception('Invalid op value!!!')
-            res = [df.columns.values.tolist()] + df.values.tolist()
+            res = df.values.tolist()
 
         print("Without B+_tree, the cost of searching {att} {op} {val} on {rel} is {value} pages".format(rel=rel,
                                                                                                          att=att,
@@ -272,27 +285,80 @@ def select(rel, att, op, val):
                                                                                                          value="???"))
 
     # TODO: print the total number of pages read from B+ tree or from data files
-    tmp_result = "../data/Temporary/tmp.txt"
-    with open(tmp_result, "w") as f:
-        f.write(json.dumps(res))
+    write_to_pages(rel, res)
 
-    return tmp_result
+    return rel
+
+
+def get_schema(rel):
+    with open(os.path.join(DATA_PATH, SCHEMAS)) as sc:
+        content = sc.readlines()[0]
+        fields = json.loads(content)
+        fields = [field for field in fields if field[0] == rel]
+        fields.sort(key=lambda x: x[3])
+        schema = [field[1] for field in fields]
+    return schema
+
+
+def write_to_pages(rel, res):
+    rel_name = rel
+    if os.path.exists(os.path.join(DATA_PATH, rel)):
+        rel_name = rel + "_tmp"
+        os.mkdir(os.path.join(DATA_PATH, rel_name))
+    else:
+        os.mkdir(os.path.join(DATA_PATH, rel))
+
+    length = len(res)
+    for i in range(0, length, CAPACITY):
+        page = get_page()
+        with open(os.path.join(DATA_PATH, rel_name, page), "w") as f:
+            f.write(json.dumps(res[i:i + CAPACITY]))
+
+
+def update_schemas(rel, attList):
+    new_items = []
+    for index, value in enumerate(attList):
+        # TODO: get the correct type for each field
+        new_items.append([rel, value, "str", index])
+    with open(os.path.join(DATA_PATH, SCHEMAS)) as sc:
+        content = sc.readlines()[0]
+        schemas = json.loads(content)
+
+    schemas += new_items
+    with open(os.path.join(DATA_PATH, SCHEMAS), 'w') as f:
+        f.write(json.dumps(schemas))
 
 
 def project(rel, attList):
-    with open(rel) as f:
-        content = f.readlines()[0]
-        data = json.loads(content)
-        df = pd.DataFrame(data[1:], columns=data[0])
-        df = df.filter(attList)
-        df.drop_duplicates(keep=False, inplace=True)
-        res = [df.columns.values.tolist()] + df.values.tolist()
+    tmp_path = os.path.join(DATA_PATH, rel + "_tmp")
+    # TODO: handle the case when path is the initial folder
+    path = tmp_path if os.path.exists(tmp_path) else os.path.join(DATA_PATH, rel)
+    page_files = []
+    for (dirpath, dirnames, filenames) in os.walk(path):
+        page_files = filenames
 
-    tmp_result = "../data/Temporary/tmp.txt"
-    with open(tmp_result, "w") as f:
-        f.write(json.dumps(res))
+    data = []
+    for page_file in page_files:
+        with open(os.path.join(tmp_path, page_file)) as f:
+            content = f.readlines()[0]
+            two_tuples = json.loads(content)
+            data += two_tuples
 
-    return tmp_result
+    schema = get_schema(rel)
+    df = pd.DataFrame(data, columns=schema)
+    df = df.filter(attList)
+    df.drop_duplicates(keep=False, inplace=True)
+    data = df.values.tolist()
+
+    res = name_the_new_relation(attList, rel)
+    update_schemas(res, attList)
+    write_to_pages(res, data)
+
+    return res
+
+
+def name_the_new_relation(attList, rel):
+    return rel[:3] + "_" + attList[0][:3]
 
 
 def join(rel1, att1, rel2, att2):
