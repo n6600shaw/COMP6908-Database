@@ -40,6 +40,11 @@ class INDEX_TYPE(Enum):
     UNCLUSTERED_INDEX = 1
 
 
+class ATT_TYPE(Enum):
+    XID = 0
+    OTHER = 1
+
+
 class DIRECTION(Enum):
     LEFT = 0
     RIGHT = 1
@@ -51,31 +56,38 @@ unclustered_index = [
     ("Suppliers", "sname"), ("Suppliers", "address"),
     ("Supply", "pid"), ("Supply", "cost")
 ]
+xid_att = ["sid", "pid"]
 
 
-def get_tuples_by_ci(pointer_wrapper, rel, op):
-    pointer = pointer_wrapper[0]
-    filename, index = pointer[:-2], int(pointer[-1])
+def get_tuples_by_ci(leaf_node, rel, val, op):
+    res = []
+    content = leaf_node[LEAF_NODE.CONTENT.value]
+
+    related_list = []
+    for index, value in enumerate(content):
+        if isinstance(value, str) and value == val:
+            related_list = content[index + 1]
+
+    if not related_list:
+        raise Exception("Invalid val detected!! Please check your input value!!")
 
     with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
         content = pl.readlines()[0]
         pages = json.loads(content)
-        for idx, val in enumerate(pages):
-            if val == filename:
-                cursor = idx
-                break
 
-        res = []
-        if op in ('<', '<='):
+        if op == '=':
+            for pointer in related_list:
+                filename, index = pointer[:-2], int(pointer[-1])
+                res = get_single_tuple(filename, index, rel, res)
+        elif op == "<=":
+            filename, index = related_list[-1][:-2], int(related_list[-1][-1])
             for idx, val in enumerate(pages):
-                if idx == cursor:
+                if val == filename:
                     with open(os.path.join(DATA_PATH, rel, val)) as f:
                         content = f.readlines()[0]
                         data = json.loads(content)
-                        if op == '<' and index == 1 or op == '<=':
-                            res.append(data[0])
-
-                        if op == '<=' and index == 1:
+                        res.append(data[0])
+                        if index == 1:
                             res.append(data[1])
 
                     break
@@ -84,21 +96,58 @@ def get_tuples_by_ci(pointer_wrapper, rel, op):
                     content = f.readlines()[0]
                     data = json.loads(content)
                     res += data
-        elif op in ('>', '>='):
-            for idx, val in enumerate(pages[cursor:]):
+        elif op == '<':
+            filename, index = related_list[0][:-2], int(related_list[0][-1])
+            for idx, val in enumerate(pages):
+                if val == filename:
+                    with open(os.path.join(DATA_PATH, rel, val)) as f:
+                        content = f.readlines()[0]
+                        data = json.loads(content)
+                        if index == 1:
+                            res.append(data[0])
+
+                    break
+
                 with open(os.path.join(DATA_PATH, rel, val)) as f:
                     content = f.readlines()[0]
                     data = json.loads(content)
-                    if idx == cursor:
-                        if op == '>=' and index == 0:
+                    res += data
+        elif op == ">=":
+            filename, index = related_list[0][:-2], int(related_list[0][-1])
+            flag = False
+            for idx, val in enumerate(pages):
+                if flag:
+                    with open(os.path.join(DATA_PATH, rel, val)) as f:
+                        content = f.readlines()[0]
+                        data = json.loads(content)
+                        res += data
+
+                if val == filename:
+                    flag = True
+                    with open(os.path.join(DATA_PATH, rel, val)) as f:
+                        content = f.readlines()[0]
+                        data = json.loads(content)
+                        if index == 0:
                             res.append(data[0])
 
-                        if op == '>' and index == 0 or op == '>=':
-                            res.append(data[1])
-                    else:
+                        res.append(data[1])
+        elif op == '>':
+            filename, index = related_list[-1][:-2], int(related_list[-1][-1])
+            flag = False
+            for idx, val in enumerate(pages):
+                if flag:
+                    with open(os.path.join(DATA_PATH, rel, val)) as f:
+                        content = f.readlines()[0]
+                        data = json.loads(content)
                         res += data
-        elif op == '=':
-            res = get_single_tuple(filename, index, rel, res)
+
+                if val == filename:
+                    flag = True
+                    with open(os.path.join(DATA_PATH, rel, val)) as f:
+                        content = f.readlines()[0]
+                        data = json.loads(content)
+                        if index == 0:
+                            res.append(data[1])
         else:
             raise Exception('Invalid op value!!!')
 
@@ -117,12 +166,12 @@ def get_single_tuple(filename, index, rel, res):
 def get_data_files(rel, node_content, res):
     for item in node_content:
         if isinstance(item, list):
-            pointer = item[0]
-            filename, index = pointer[:-2], int(pointer[-1])
-            with open(os.path.join(DATA_PATH, rel, filename)) as f:
-                content = f.readlines()[0]
-                data = json.loads(content)
-                res.append(data[index])
+            for pointer in item:
+                filename, index = pointer[:-2], int(pointer[-1])
+                with open(os.path.join(DATA_PATH, rel, filename)) as f:
+                    content = f.readlines()[0]
+                    data = json.loads(content)
+                    res.append(data[index])
 
     return res
 
@@ -149,35 +198,39 @@ def get_tuples_by_ui(leaf_node, rel, val, op):
         content.reverse()
         for index, value in enumerate(content):
             if (isinstance(value, str) and value == val and op == '<=') or (isinstance(value, str) and value < val):
-                pointer_wrapper = content[index - 1]
-                pointer = pointer_wrapper[0]
-                filename, index = pointer[:-2], int(pointer[-1])
-                res = get_single_tuple(filename, index, rel, res)
+                item = content[index - 1]
+                for pointer in item:
+                    filename, index = pointer[:-2], int(pointer[-1])
+                    res = get_single_tuple(filename, index, rel, res)
         if leaf_node[LEAF_NODE.LEFT_POINTER.value] != "nil":
             res = search(leaf_node[LEAF_NODE.LEFT_POINTER.value], rel, res, DIRECTION.LEFT)
     elif op in ('>', '>='):
         for index, value in enumerate(content):
             if (isinstance(value, str) and value == val and op == '>=') or (isinstance(value, str) and value > val):
-                pointer_wrapper = content[index + 1]
-                pointer = pointer_wrapper[0]
-                filename, index = pointer[:-2], int(pointer[-1])
-                res = get_single_tuple(filename, index, rel, res)
+                item = content[index + 1]
+                for pointer in item:
+                    filename, index = pointer[:-2], int(pointer[-1])
+                    res = get_single_tuple(filename, index, rel, res)
         if leaf_node[LEAF_NODE.RIGHT_POINTER.value] != "nil":
             res = search(leaf_node[LEAF_NODE.RIGHT_POINTER.value], rel, res, DIRECTION.RIGHT)
     elif op == '=':
         for index, value in enumerate(content):
             if isinstance(value, str) and value == val:
-                pointer_wrapper = content[index + 1]
-                pointer = pointer_wrapper[0]
-                filename, index = pointer[:-2], int(pointer[-1])
-                res = get_single_tuple(filename, index, rel, res)
+                item = content[index + 1]
+                for pointer in item:
+                    filename, index = pointer[:-2], int(pointer[-1])
+                    res = get_single_tuple(filename, index, rel, res)
     else:
         raise Exception('Invalid op value!!!')
 
     return res
 
 
-def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX):
+def convert_id_to_int(id_):
+    return int(id_[1:])
+
+
+def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX, att_type=ATT_TYPE.OTHER):
     res = None
     with open(os.path.join(INDEX_PATH, filename)) as f:
         info = f.readlines()[0]
@@ -187,23 +240,23 @@ def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX):
             located = False
             for index, value in enumerate(content):
                 if not value.endswith(".txt"):
-                    if val < value:
-                        res = dfs(content[index - 1], rel, val, op, index_type)
+                    if att_type == ATT_TYPE.XID:
+                        int_val, int_value = convert_id_to_int(val), convert_id_to_int(value)
+                    input_less_than_value = int_val < int_value if att_type == ATT_TYPE.XID else val < value
+                    if input_less_than_value:
+                        res = dfs(content[index - 1], rel, val, op, index_type, att_type)
                         located = True
                         break
-                    if val == value:
-                        res = dfs(content[index + 1], rel, val, op, index_type)
+                    elif val == value:
+                        res = dfs(content[index + 1], rel, val, op, index_type, att_type)
                         located = True
                         break
 
             if not located:
-                res = dfs(content[-1], rel, val, op, index_type)
+                res = dfs(content[-1], rel, val, op, index_type, att_type)
         else:
             if index_type == INDEX_TYPE.CLUSTERED_INDEX:
-                content = data[LEAF_NODE.CONTENT.value]
-                for index, value in enumerate(content):
-                    if isinstance(value, str) and value == val:
-                        res = get_tuples_by_ci(content[index + 1], rel, op)
+                res = get_tuples_by_ci(data, rel, val, op)
             else:
                 res = get_tuples_by_ui(data, rel, val, op)
 
@@ -227,6 +280,7 @@ def get_page():
 
 
 def select(rel, att, op, val):
+    counter = 0
     res = None
     tree_root = None
     with open(os.path.join(INDEX_PATH, INDEX_DIRECTORY)) as id_:
@@ -236,6 +290,11 @@ def select(rel, att, op, val):
             if tuple_[RELATION_POS] == rel and tuple_[ATTR_POS] == att:
                 tree_root = tuple_[ROOT_POS]
                 break
+
+    if att in xid_att:
+        att_type = ATT_TYPE.XID
+    else:
+        att_type = ATT_TYPE.OTHER
 
     schema = get_schema(rel)
 
@@ -247,7 +306,7 @@ def select(rel, att, op, val):
                 index_type = INDEX_TYPE.CLUSTERED_INDEX
                 break
 
-        res = dfs(tree_root, rel, val, op, index_type)
+        res = dfs(tree_root, rel, val, op, index_type, att_type)
         print("With B+_tree, the cost of searching {att} {op} {val} on {rel} is {value} pages".format(rel=rel,
                                                                                                       att=att,
                                                                                                       op=op,
