@@ -43,11 +43,11 @@ Supply.cost
     - [x] function to build b+ tree index
     - [x] assign pages to tree node and data records
     - [x] store tree index to actual txt files
-+ [ ] remove.py
++ [x] remove.py
     - [x] removeTree function
         -  [x] baseline
         -  [x] release the occupied pages to the page pool
-        -  [ ] test remove tree function on real tree files generated
+        -  [x] test remove tree function on real tree files generated
     - [x] removeTable function
 + [ ] display.py
     - [x] displayTree function
