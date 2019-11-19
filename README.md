@@ -33,7 +33,7 @@ Supply.cost
         -  [x] via clustered index (including operator: <, <=, =, \>, \>=)
         -  [x] via unclustered index (including operator: <, <=, =, \>, \>=)
         -  [ ] print the total number of pages read from B+ tree or from data files
-        -  [ ] fix the bug: one index value corresponds to multiple data files
+        -  [x] fix the bug: one index value corresponds to multiple data files
     - [x] project function
         -  [x] read from multiple pages
     - [ ] join function
