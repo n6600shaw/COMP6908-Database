@@ -75,9 +75,9 @@ def displayTable(rel, fname):
 
     if not os.path.exists(OUTPUT_PATH):
         os.mkdir(os.path.join(OUTPUT_PATH))
-    with open(os.path.join(OUTPUT_PATH, fname), "w") as qr:
-        qr.write(json.dumps(data))
+    with open(os.path.join(OUTPUT_PATH, fname), "a+") as qr:
+        qr.write(json.dumps(data) + "\r\n\r\n")
 
 
 if __name__ == "__main__":
-    displayTree("pg71.txt")
+    displayTree("pg46.txt")
