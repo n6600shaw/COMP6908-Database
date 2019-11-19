@@ -53,9 +53,9 @@ Supply.cost
     - [x] displayTree function
         -  [x] baseline
         -  [x] save to the appropriate file
-    - [ ] displayTable function
+    - [x] displayTable function
         -  [x] baseline
-        -  [ ] display as the required format
+        -  [x] display as the required format
 + [x] query.py
     - [x] query a
     - [x] query b
