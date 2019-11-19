@@ -54,6 +54,8 @@ Supply.cost
         -  [x] baseline
         -  [ ] save to the appropriate file
     - [ ] displayTable function
+        -  [x] baseline
+        -  [ ] display as the required format
 + [x] query.py
     - [x] query a
     - [x] query b
