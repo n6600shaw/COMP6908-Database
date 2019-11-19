@@ -50,9 +50,9 @@ Supply.cost
         -  [ ] test remove tree function on real tree files generated
     - [x] removeTable function
 + [ ] display.py
-    - [ ] displayTree function
+    - [x] displayTree function
         -  [x] baseline
-        -  [ ] save to the appropriate file
+        -  [x] save to the appropriate file
     - [ ] displayTable function
         -  [x] baseline
         -  [ ] display as the required format
