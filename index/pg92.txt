@@ -1,1 +1,1 @@
-["L", "pg94.txt", "pg95.txt", "pg91.txt", ["s08", ["page03.txt.1"], "s09", ["page04.txt.0"]]]
+["I", "pg80.txt", ["pg97.txt", "s04", "pg94.txt"]]
