@@ -32,21 +32,24 @@ def query_b():
 def query_c():
     tmp_result = select(SUPPLY, "pid", "=", "p15")
     tmp_result = join(SUPPLIERS, "sid", tmp_result, "sid")
-    project(tmp_result, ["address"])
+    query_result = project(tmp_result, ["address"])
+    return query_result
 
 
 def query_d():
-    tmp_result = select(SUPPLIERS, "sname", "=", "Kiddie")
-    tmp_result = select(tmp_result, "pid", "=", "p20")
-    tmp_result = join(tmp_result, "sid", SUPPLY, "sid")
-    project(tmp_result, ["cost"])
+    tmp_res1 = select(SUPPLIERS, "sname", "=", "Kiddie")
+    tmp_res2 = select(tmp_res1, "pid", "=", "p20")
+    tmp_result = join(tmp_res1, "sid", tmp_res2, "sid")
+    query_result = project(tmp_result, ["cost"])
+    return query_result
 
 
 def query_e():
     tmp_result = select(SUPPLY, "cost", ">=", 47.00)
     tmp_result = join(tmp_result, "pid", PRODUCTS, "pid")
     tmp_result = join(tmp_result, "sid", SUPPLIERS, "sid")
-    project(tmp_result, ["sname", "pname", "cost"])
+    query_result = project(tmp_result, ["sname", "pname", "cost"])
+    return query_result
 
 
 if __name__ == "__main__":
