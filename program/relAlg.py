@@ -17,6 +17,7 @@ CONTENT_POS = 2
 RELATION_POS = 0
 ATTR_POS = 1
 ROOT_POS = 2
+ORDER_POS = 3
 
 CAPACITY = 2
 
@@ -354,7 +355,7 @@ def get_schema(rel):
         content = sc.readlines()[0]
         fields = json.loads(content)
         fields = [field for field in fields if field[0] == rel]
-        fields.sort(key=lambda x: x[3])
+        fields.sort(key=lambda x: x[ORDER_POS])
         schema = [field[1] for field in fields]
     return schema
 
@@ -367,11 +368,16 @@ def write_to_pages(rel, res):
     else:
         os.mkdir(os.path.join(DATA_PATH, rel))
 
+    page_link = []
     length = len(res)
     for i in range(0, length, CAPACITY):
         page = get_page()
+        page_link.append(page)
         with open(os.path.join(DATA_PATH, rel_name, page), "w") as f:
             f.write(json.dumps(res[i:i + CAPACITY]))
+
+    with open(os.path.join(DATA_PATH, rel_name, PAGE_LINK), "w") as pl:
+        pl.write(json.dumps(page_link))
 
 
 def update_schemas(rel, attList):
@@ -392,9 +398,9 @@ def project(rel, attList):
     tmp_path = os.path.join(DATA_PATH, rel + "_tmp")
     # TODO: handle the case when path is the initial folder
     path = tmp_path if os.path.exists(tmp_path) else os.path.join(DATA_PATH, rel)
-    page_files = []
-    for (dirpath, dirnames, filenames) in os.walk(path):
-        page_files = filenames
+    with open(os.path.join(path, PAGE_LINK)) as pl:
+        content = pl.readlines()[0]
+        page_files = json.loads(content)
 
     data = []
     for page_file in page_files:
@@ -420,19 +426,36 @@ def name_the_new_relation(attList, rel):
     return rel[:3] + "_" + attList[0][:3]
 
 
+def name_the_new_relation_v2(rel1, rel2):
+    return rel1[3:] + "_" + rel2[3:]
+
+
 def join(rel1, att1, rel2, att2):
-    with open(rel1) as f1, open(rel2) as f2:
-        content1 = f1.readlines()[0]
-        content2 = f2.readlines()[0]
-        data1 = json.loads(content1)
-        data2 = json.loads(content2)
-        df1 = pd.DataFrame(data1[1:], columns=data1[0])
-        df2 = pd.DataFrame(data2[1:], columns=data2[0])
-        df = pd.merge(df1, df2, left_on=att1, right_on=att2, how='inner')
-        res = [df.columns.values.tolist()] + df.values.tolist()
+    schema1 = get_schema(rel1)
+    schema2 = get_schema(rel2)
+    att1_pos = schema1.index(att1)
+    att2_pos = schema2.index(att2)
+    schema = schema1 + schema2
+    new_schema = schema.pop(att1_pos)
 
-    tmp_result = "../data/Temporary/tmp.txt"
-    with open(tmp_result, "w") as f:
-        f.write(json.dumps(res))
+    with open(os.path.join(DATA_PATH, rel1, PAGE_LINK)) as pl1, open(os.path.join(DATA_PATH, rel2, PAGE_LINK)) as pl2:
+        rel1_page_files = json.loads(pl1.readlines()[0])
+        rel2_page_files = json.loads(pl2.readlines()[0])
 
-    return tmp_result
+    data = []
+    for rel1_page_file in rel1_page_files:
+        with open(os.path.join(DATA_PATH, rel1, rel1_page_file)) as pg1:
+            rel1_tuples = json.loads(pg1.readlines()[0])
+
+            for rel2_page_file in rel2_page_files:
+                with open(os.path.join(DATA_PATH, rel2, rel2_page_file)) as pg2:
+                    rel2_tuples = json.loads(pg2.readlines()[0])
+                    new_data = [t1 + t2 for t1 in rel1_tuples for t2 in rel2_tuples if t1[att1_pos] == t2[att2_pos]]
+                    new_data.pop(att1_pos)
+                    data += new_data
+
+    res = name_the_new_relation_v2(rel1, rel2)
+    update_schemas(res, new_schema)
+    write_to_pages(res, data)
+
+    return res
