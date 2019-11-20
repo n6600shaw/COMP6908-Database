@@ -1,8 +1,8 @@
 import os
 
-from program.relAlg import select, project, join
-from program.display import displayTable
-from program.remove import removeTree, removeTable
+from relAlg import select, project, join
+# from program.display import displayTable
+# from program.remove import removeTree, removeTable
 
 SUPPLY = "Supply"
 PRODUCTS = "Products"
@@ -53,13 +53,13 @@ def query_e():
 
 
 if __name__ == "__main__":
-    # res = query_x()
+    res = query_x()
     with open(os.path.join(OUTPUT_PATH, QUERY_RESULT), "a+") as qr:
         qr.write("Find the name for the supplier ‘s23’ when a B+_tree exists on Suppliers.sid.\r\n")
 
-    res = query_a()
-    displayTable(res, QUERY_RESULT)
-    removeTable(res)
+    # res = query_a()
+    # displayTable(res, QUERY_RESULT)
+    # removeTable(res)
     # removeTree(SUPPLIERS, "sid")
     with open(os.path.join(OUTPUT_PATH, QUERY_RESULT), "a+") as qr:
         qr.write("Remove the B+_tree from Suppliers.sid, and repeat Question a.\r\n")

@@ -37,4 +37,4 @@ def buildTree(rel, att, od):
 
 
 if __name__ == '__main__':
-    buildTree('Supply', 'pid', 2)
+    buildTree('Supply', 'sid', 2)

@@ -27,12 +27,11 @@ def dfs(filename):
                     pages.append(entry)
                     os.remove(os.path.join(INDEX_PATH, entry))
 
-            # TODO: release the occupied pages to the page pool
             with open(os.path.join(INDEX_PATH, PAGE_POOL)) as df:
                 page_pool = json.loads(df.readlines()[0])
                 page_pool.extend(pages)
                 page_pool.sort(reverse=True)
-            with open(os.path.join(INDEX_PATH, PAGE_POOL),'w') as df:
+            with open(os.path.join(INDEX_PATH, PAGE_POOL), 'w') as df:
                 df.write(json.dumps(page_pool))
 
 
@@ -84,5 +83,4 @@ def removeTable(rel):
 
 
 if __name__ == "__main__":
-    removeTable("Suppliers_tmp")
-    # removeTree("Supply", "pid")
+    removeTable("Supply_tmp")
