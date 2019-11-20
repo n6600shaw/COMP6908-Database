@@ -451,7 +451,7 @@ def join(rel1, att1, rel2, att2):
                 with open(os.path.join(DATA_PATH, rel2, rel2_page_file)) as pg2:
                     rel2_tuples = json.loads(pg2.readlines()[0])
                     new_data = [t1 + t2 for t1 in rel1_tuples for t2 in rel2_tuples if t1[att1_pos] == t2[att2_pos]]
-                    new_data.pop(att1_pos)
+                    new_data = [nd[:att1_pos] + nd[att1_pos+1:] for nd in new_data]
                     data += new_data
 
     res = name_the_new_relation_v2(rel1, rel2)
