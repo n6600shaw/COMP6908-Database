@@ -38,7 +38,8 @@ Supply.cost
         -  [x] read from multiple pages
     - [ ] join function
         -  [x] baseline
-        -  [ ] use B+ tree or nested-loops-page-at-a-time to join
+        -  [x] use nested-loops-page-at-a-time to join
+        -  [ ] use B+ tree to join
 + [x] buildTree.py
     - [x] function to build b+ tree index
     - [x] assign pages to tree node and data records
