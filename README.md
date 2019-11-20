@@ -28,11 +28,11 @@ Supply.cost
 ## Checklist
 
 + [ ] relAlg.py
-    - [ ] select function
+    - [x] select function
         -  [x] scan data from B+Tree or data files
         -  [x] via clustered index (including operator: <, <=, =, \>, \>=)
         -  [x] via unclustered index (including operator: <, <=, =, \>, \>=)
-        -  [ ] print the total number of pages read from B+ tree or from data files
+        -  [x] print the total number of pages read from B+ tree or from data files
         -  [x] fix the bug: one index value corresponds to multiple data files
     - [x] project function
         -  [x] read from multiple pages

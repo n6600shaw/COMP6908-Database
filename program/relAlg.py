@@ -4,7 +4,6 @@ from enum import Enum
 
 import pandas as pd
 
-
 DATA_PATH = "../data/"
 INDEX_PATH = "../index/"
 INDEX_DIRECTORY = "directory.txt"
@@ -63,7 +62,7 @@ xid_att = ["sid", "pid"]
 def get_tuples_by_ci(leaf_node, rel, val, op):
     res = []
     content = leaf_node[LEAF_NODE.CONTENT.value]
-
+    counter = 0
     related_list = []
     for index, value in enumerate(content):
         if isinstance(value, str) and value == val:
@@ -83,6 +82,7 @@ def get_tuples_by_ci(leaf_node, rel, val, op):
         elif op == "<=":
             filename, index = related_list[-1][:-2], int(related_list[-1][-1])
             for idx, val in enumerate(pages):
+                counter += 1
                 if val == filename:
                     with open(os.path.join(DATA_PATH, rel, val)) as f:
                         content = f.readlines()[0]
@@ -100,6 +100,7 @@ def get_tuples_by_ci(leaf_node, rel, val, op):
         elif op == '<':
             filename, index = related_list[0][:-2], int(related_list[0][-1])
             for idx, val in enumerate(pages):
+                counter += 1
                 if val == filename:
                     with open(os.path.join(DATA_PATH, rel, val)) as f:
                         content = f.readlines()[0]
@@ -117,6 +118,7 @@ def get_tuples_by_ci(leaf_node, rel, val, op):
             filename, index = related_list[0][:-2], int(related_list[0][-1])
             flag = False
             for idx, val in enumerate(pages):
+                counter += 1
                 if flag:
                     with open(os.path.join(DATA_PATH, rel, val)) as f:
                         content = f.readlines()[0]
@@ -136,6 +138,7 @@ def get_tuples_by_ci(leaf_node, rel, val, op):
             filename, index = related_list[-1][:-2], int(related_list[-1][-1])
             flag = False
             for idx, val in enumerate(pages):
+                counter += 1
                 if flag:
                     with open(os.path.join(DATA_PATH, rel, val)) as f:
                         content = f.readlines()[0]
@@ -152,7 +155,7 @@ def get_tuples_by_ci(leaf_node, rel, val, op):
         else:
             raise Exception('Invalid op value!!!')
 
-    return res
+    return res, counter
 
 
 def get_single_tuple(filename, index, rel, res):
@@ -185,7 +188,8 @@ def search(pointer, rel, res, direction=DIRECTION.LEFT):
         if direction == DIRECTION.LEFT:
             content.reverse()
         res = get_data_files(rel, content, res)
-        next_pointer = data[LEAF_NODE.LEFT_POINTER.value if direction == DIRECTION.LEFT else LEAF_NODE.RIGHT_POINTER.value]
+        next_pointer = data[
+            LEAF_NODE.LEFT_POINTER.value if direction == DIRECTION.LEFT else LEAF_NODE.RIGHT_POINTER.value]
 
     if next_pointer != "nil":
         res = search(next_pointer, rel, res, direction)
@@ -194,10 +198,12 @@ def search(pointer, rel, res, direction=DIRECTION.LEFT):
 
 def get_tuples_by_ui(leaf_node, rel, val, op):
     res = []
+    counter = 0
     content = leaf_node[LEAF_NODE.CONTENT.value]
     if op in ('<', '<='):
         content.reverse()
         for index, value in enumerate(content):
+            counter += 1
             if (isinstance(value, str) and value == val and op == '<=') or (isinstance(value, str) and value < val):
                 item = content[index - 1]
                 for pointer in item:
@@ -207,6 +213,7 @@ def get_tuples_by_ui(leaf_node, rel, val, op):
             res = search(leaf_node[LEAF_NODE.LEFT_POINTER.value], rel, res, DIRECTION.LEFT)
     elif op in ('>', '>='):
         for index, value in enumerate(content):
+            counter += 1
             if (isinstance(value, str) and value == val and op == '>=') or (isinstance(value, str) and value > val):
                 item = content[index + 1]
                 for pointer in item:
@@ -216,6 +223,7 @@ def get_tuples_by_ui(leaf_node, rel, val, op):
             res = search(leaf_node[LEAF_NODE.RIGHT_POINTER.value], rel, res, DIRECTION.RIGHT)
     elif op == '=':
         for index, value in enumerate(content):
+            counter += 1
             if isinstance(value, str) and value == val:
                 item = content[index + 1]
                 for pointer in item:
@@ -224,7 +232,7 @@ def get_tuples_by_ui(leaf_node, rel, val, op):
     else:
         raise Exception('Invalid op value!!!')
 
-    return res
+    return res, counter
 
 
 def convert_id_to_int(id_):
@@ -233,6 +241,9 @@ def convert_id_to_int(id_):
 
 def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX, att_type=ATT_TYPE.OTHER):
     res = None
+
+    counter = 1
+    res_count = 0
     with open(os.path.join(INDEX_PATH, filename)) as f:
         info = f.readlines()[0]
         data = json.loads(info)
@@ -245,23 +256,29 @@ def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX, att_type=
                         int_val, int_value = convert_id_to_int(val), convert_id_to_int(value)
                     input_less_than_value = int_val < int_value if att_type == ATT_TYPE.XID else val < value
                     if input_less_than_value:
-                        res = dfs(content[index - 1], rel, val, op, index_type, att_type)
+                        res, res_count = dfs(content[index - 1], rel, val, op, index_type, att_type)
                         located = True
+                        counter += res_count
                         break
                     elif val == value:
-                        res = dfs(content[index + 1], rel, val, op, index_type, att_type)
+                        res, res_count = dfs(content[index + 1], rel, val, op, index_type, att_type)
                         located = True
+                        counter += res_count
                         break
 
             if not located:
-                res = dfs(content[-1], rel, val, op, index_type, att_type)
+                res, res_count = dfs(content[-1], rel, val, op, index_type, att_type)
+                counter += res_count
         else:
+            counter = 0
             if index_type == INDEX_TYPE.CLUSTERED_INDEX:
-                res = get_tuples_by_ci(data, rel, val, op)
+                res, res_count = get_tuples_by_ci(data, rel, val, op)
+                counter += res_count
             else:
-                res = get_tuples_by_ui(data, rel, val, op)
+                res, res_count = get_tuples_by_ui(data, rel, val, op)
+                counter += res_count
 
-    return res
+    return res, counter
 
 
 def get_page():
@@ -307,17 +324,19 @@ def select(rel, att, op, val):
                 index_type = INDEX_TYPE.CLUSTERED_INDEX
                 break
 
-        res = dfs(tree_root, rel, val, op, index_type, att_type)
+        res, res_count = dfs(tree_root, rel, val, op, index_type, att_type)
+        counter += res_count
         print("With B+_tree, the cost of searching {att} {op} {val} on {rel} is {value} pages".format(rel=rel,
                                                                                                       att=att,
                                                                                                       op=op,
                                                                                                       val=val,
-                                                                                                      value="???"))
+                                                                                                      value=counter))
     else:
         with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
             content = pl.readlines()[0]
             pages = json.loads(content)
             for page in pages:
+                counter += 1
                 with open(os.path.join(DATA_PATH, rel, page)) as pg:
                     page_content = pg.readlines()[0]
                     page_data = json.loads(page_content)
@@ -342,9 +361,8 @@ def select(rel, att, op, val):
                                                                                                          att=att,
                                                                                                          op=op,
                                                                                                          val=val,
-                                                                                                         value="???"))
+                                                                                                         value=counter))
 
-    # TODO: print the total number of pages read from B+ tree or from data files
     write_to_pages(rel, res)
 
     return rel
@@ -451,7 +469,7 @@ def join(rel1, att1, rel2, att2):
                 with open(os.path.join(DATA_PATH, rel2, rel2_page_file)) as pg2:
                     rel2_tuples = json.loads(pg2.readlines()[0])
                     new_data = [t1 + t2 for t1 in rel1_tuples for t2 in rel2_tuples if t1[att1_pos] == t2[att2_pos]]
-                    new_data = [nd[:att1_pos] + nd[att1_pos+1:] for nd in new_data]
+                    new_data = [nd[:att1_pos] + nd[att1_pos + 1:] for nd in new_data]
                     data += new_data
 
     res = name_the_new_relation_v2(rel1, rel2)
