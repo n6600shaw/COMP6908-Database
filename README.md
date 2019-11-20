@@ -50,6 +50,8 @@ Supply.cost
         -  [x] release the occupied pages to the page pool
         -  [x] test remove tree function on real tree files generated
     - [x] removeTable function
+        -  [x] baseline
+        -  [x] call removeTree function
 + [x] display.py
     - [x] displayTree function
         -  [x] baseline

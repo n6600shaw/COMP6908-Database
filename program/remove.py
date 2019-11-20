@@ -1,12 +1,12 @@
 import json
 import os
 import shutil
-import ast
 
 DATA_PATH = "../data/"
 INDEX_PATH = "../index/"
 INDEX_DIRECTORY = "directory.txt"
 PAGE_POOL = "pagePool.txt"
+SCHEMAS = "schemas.txt"
 
 TYPE_POS = 0
 CONTENT_POS = 2
@@ -34,7 +34,6 @@ def dfs(filename):
                 page_pool.sort(reverse=True)
             with open(os.path.join(INDEX_PATH, PAGE_POOL),'w') as df:
                 df.write(json.dumps(page_pool))
-
 
 
 def removeTree(rel, att):
@@ -67,9 +66,23 @@ def removeTable(rel):
             res = json.dumps(page_pool + page_files)
             pp.write(res)
 
+        with open(os.path.join(DATA_PATH, SCHEMAS)) as sc:
+            content = sc.readlines()[0]
+            fields = json.loads(content)
+
+        fields = [field for field in fields if field[RELATION_POS] != rel]
+        with open(os.path.join(DATA_PATH, SCHEMAS), "w") as sc:
+            res = json.dumps(fields)
+            sc.write(res)
+
         shutil.rmtree(path)
+        with open(os.path.join(INDEX_PATH, INDEX_DIRECTORY)) as id_:
+            indices = json.loads(id_.readlines()[0])
+            for index in indices:
+                if index[RELATION_POS] == rel:
+                    removeTree(index[RELATION_POS], index[ATTR_POS])  # NOTICE: might be a bug here
 
 
 if __name__ == "__main__":
-    # removeTable("Sup_sna")
-    removeTree("Supply", "pid")
+    removeTable("Suppliers_tmp")
+    # removeTree("Supply", "pid")
