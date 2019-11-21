@@ -80,4 +80,4 @@ def displayTable(rel, fname):
 
 
 if __name__ == "__main__":
-    displayTree("pg46.txt")
+    displayTree("pg80.txt")
