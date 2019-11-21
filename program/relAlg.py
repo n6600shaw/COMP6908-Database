@@ -365,56 +365,28 @@ def select(rel, att, op, val):
             content = pl.readlines()[0]
             pages = json.loads(content)
 
-        att_pos = schema.index(att)
-        if op == '<':
+            res = []
             for page in pages:
                 counter += 1
                 with open(os.path.join(DATA_PATH, rel, page)) as pg:
                     page_content = pg.readlines()[0]
                     page_data = json.loads(page_content)
-                    new_data = [pd for pd in page_data if pd[att_pos] < val]
-                    data += new_data
-                    if len(new_data) < 2:
-                        break
-        elif op == '<=':
-            for page in pages:
-                counter += 1
-                with open(os.path.join(DATA_PATH, rel, page)) as pg:
-                    page_content = pg.readlines()[0]
-                    page_data = json.loads(page_content)
-                    new_data = [pd for pd in page_data if pd[att_pos] <= val]
-                    data += new_data
-                    if len(new_data) < 2:
-                        break
-        elif op == '=':
-            for page in pages:
-                counter += 1
-                with open(os.path.join(DATA_PATH, rel, page)) as pg:
-                    page_content = pg.readlines()[0]
-                    page_data = json.loads(page_content)
-                    new_data = [pd for pd in page_data if pd[att_pos] == val]
-                    data += new_data
-                    if len([pd for pd in page_data if pd[att_pos] > val]) > 0:
-                        break
-        elif op == '>':
-            for page in pages:
-                counter += 1
-                with open(os.path.join(DATA_PATH, rel, page)) as pg:
-                    page_content = pg.readlines()[0]
-                    page_data = json.loads(page_content)
-                    new_data = [pd for pd in page_data if pd[att_pos] > val]
-                    data += new_data
-        elif op == '>=':
-            for page in pages:
-                counter += 1
-                with open(os.path.join(DATA_PATH, rel, page)) as pg:
-                    page_content = pg.readlines()[0]
-                    page_data = json.loads(page_content)
-                    new_data = [pd for pd in page_data if pd[att_pos] >= val]
-                    data += new_data
-        else:
-            raise Exception('Invalid op value!!!')
-        res = data
+                    data += page_data
+
+                    df = pd.DataFrame(data, columns=schema)
+                    if op == '<':
+                        df = df.loc[df[att] < val]
+                    elif op == '<=':
+                        df = df.loc[df[att] <= val]
+                    elif op == '=':
+                        df = df.loc[df[att] == val]
+                    elif op == '>':
+                        df = df.loc[df[att] > val]
+                    elif op == '>=':
+                        df = df.loc[df[att] >= val]
+                    else:
+                        raise Exception('Invalid op value!!!')
+                    res = df.values.tolist()
 
         print("Without B+_tree, the cost of searching {att} {op} {val} on {rel} is {value} pages".format(rel=rel,
                                                                                                          att=att,
