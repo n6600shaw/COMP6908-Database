@@ -59,7 +59,7 @@ unclustered_index = [
 xid_att = ["sid", "pid"]
 
 
-def get_tuples_by_ci(leaf_node, rel, val, op):
+def get_tuples_by_clustered_index(leaf_node, rel, val, op):
     res = []
     content = leaf_node[LEAF_NODE.CONTENT.value]
     counter = 0
@@ -196,7 +196,7 @@ def search(pointer, rel, res, direction=DIRECTION.LEFT):
     return res
 
 
-def get_tuples_by_ui(leaf_node, rel, val, op):
+def get_tuples_by_unclustered_index(leaf_node, rel, val, op):
     res = []
     counter = 0
     content = leaf_node[LEAF_NODE.CONTENT.value]
@@ -243,7 +243,6 @@ def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX, att_type=
     res = None
 
     counter = 1
-    res_count = 0
     with open(os.path.join(INDEX_PATH, filename)) as f:
         info = f.readlines()[0]
         data = json.loads(info)
@@ -272,10 +271,10 @@ def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX, att_type=
         else:
             counter = 0
             if index_type == INDEX_TYPE.CLUSTERED_INDEX:
-                res, res_count = get_tuples_by_ci(data, rel, val, op)
+                res, res_count = get_tuples_by_clustered_index(data, rel, val, op)
                 counter += res_count
             else:
-                res, res_count = get_tuples_by_ui(data, rel, val, op)
+                res, res_count = get_tuples_by_unclustered_index(data, rel, val, op)
                 counter += res_count
 
     return res, counter
@@ -299,14 +298,12 @@ def get_page():
 
 def select(rel, att, op, val):
     counter = 0
-    res = None
     tree_root = None
     with open(os.path.join(INDEX_PATH, INDEX_DIRECTORY)) as id_:
-        content = id_.readlines()[0]
-        tuples = json.loads(content)
-        for tuple_ in tuples:
-            if tuple_[RELATION_POS] == rel and tuple_[ATTR_POS] == att:
-                tree_root = tuple_[ROOT_POS]
+        indices = json.loads(id_.readlines()[0])
+        for index in indices:
+            if index[RELATION_POS] == rel and index[ATTR_POS] == att:
+                tree_root = index[ROOT_POS]
                 break
 
     if att in xid_att:
@@ -335,27 +332,57 @@ def select(rel, att, op, val):
         with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
             content = pl.readlines()[0]
             pages = json.loads(content)
+
+        att_pos = schema.index(att)
+        if op == '<':
             for page in pages:
                 counter += 1
                 with open(os.path.join(DATA_PATH, rel, page)) as pg:
                     page_content = pg.readlines()[0]
                     page_data = json.loads(page_content)
-                    data += page_data
-
-            df = pd.DataFrame(data, columns=schema)
-            if op == '<':
-                df = df.loc[df[att] < val]
-            elif op == '<=':
-                df = df.loc[df[att] <= val]
-            elif op == '=':
-                df = df.loc[df[att] == val]
-            elif op == '>':
-                df = df.loc[df[att] > val]
-            elif op == '>=':
-                df = df.loc[df[att] >= val]
-            else:
-                raise Exception('Invalid op value!!!')
-            res = df.values.tolist()
+                    new_data = [pd for pd in page_data if pd[att_pos] < val]
+                    data += new_data
+                    if len(new_data) < 2:
+                        break
+        elif op == '<=':
+            for page in pages:
+                counter += 1
+                with open(os.path.join(DATA_PATH, rel, page)) as pg:
+                    page_content = pg.readlines()[0]
+                    page_data = json.loads(page_content)
+                    new_data = [pd for pd in page_data if pd[att_pos] <= val]
+                    data += new_data
+                    if len(new_data) < 2:
+                        break
+        elif op == '=':
+            for page in pages:
+                counter += 1
+                with open(os.path.join(DATA_PATH, rel, page)) as pg:
+                    page_content = pg.readlines()[0]
+                    page_data = json.loads(page_content)
+                    new_data = [pd for pd in page_data if pd[att_pos] == val]
+                    data += new_data
+                    if page_data[0] > val or page_data[1] > val:
+                        break
+        elif op == '>':
+            for page in pages:
+                counter += 1
+                with open(os.path.join(DATA_PATH, rel, page)) as pg:
+                    page_content = pg.readlines()[0]
+                    page_data = json.loads(page_content)
+                    new_data = [pd for pd in page_data if pd[att_pos] > val]
+                    data += new_data
+        elif op == '>=':
+            for page in pages:
+                counter += 1
+                with open(os.path.join(DATA_PATH, rel, page)) as pg:
+                    page_content = pg.readlines()[0]
+                    page_data = json.loads(page_content)
+                    new_data = [pd for pd in page_data if pd[att_pos] >= val]
+                    data += new_data
+        else:
+            raise Exception('Invalid op value!!!')
+        res = data
 
         print("Without B+_tree, the cost of searching {att} {op} {val} on {rel} is {value} pages".format(rel=rel,
                                                                                                          att=att,
@@ -424,8 +451,8 @@ def project(rel, attList):
     for page_file in page_files:
         with open(os.path.join(tmp_path, page_file)) as f:
             content = f.readlines()[0]
-            two_tuples = json.loads(content)
-            data += two_tuples
+            page_data = json.loads(content)
+            data += page_data
 
     schema = get_schema(rel)
     df = pd.DataFrame(data, columns=schema)
@@ -456,21 +483,58 @@ def join(rel1, att1, rel2, att2):
     schema = schema1 + schema2
     new_schema = schema.pop(att1_pos)
 
-    with open(os.path.join(DATA_PATH, rel1, PAGE_LINK)) as pl1, open(os.path.join(DATA_PATH, rel2, PAGE_LINK)) as pl2:
-        rel1_page_files = json.loads(pl1.readlines()[0])
-        rel2_page_files = json.loads(pl2.readlines()[0])
-
     data = []
-    for rel1_page_file in rel1_page_files:
-        with open(os.path.join(DATA_PATH, rel1, rel1_page_file)) as pg1:
-            rel1_tuples = json.loads(pg1.readlines()[0])
+    tree_root = None
+    with open(os.path.join(INDEX_PATH, INDEX_DIRECTORY)) as id_:
+        indices = json.loads(id_.readlines()[0])
+        for index in indices:
+            if index[RELATION_POS] == rel1 and index[ATTR_POS] == att1:
+                tree_rel, tree_root = rel1, index[ROOT_POS]
+                break
+            if index[RELATION_POS] == rel2 and index[ATTR_POS] == att2:
+                tree_rel, tree_root = rel2, index[ROOT_POS]
+                break
+
+    if tree_root:
+        if tree_rel == rel1:
+            with open(os.path.join(DATA_PATH, rel2, PAGE_LINK)) as pl2:
+                rel2_page_files = json.loads(pl2.readlines()[0])
 
             for rel2_page_file in rel2_page_files:
                 with open(os.path.join(DATA_PATH, rel2, rel2_page_file)) as pg2:
                     rel2_tuples = json.loads(pg2.readlines()[0])
-                    new_data = [t1 + t2 for t1 in rel1_tuples for t2 in rel2_tuples if t1[att1_pos] == t2[att2_pos]]
-                    new_data = [nd[:att1_pos] + nd[att1_pos + 1:] for nd in new_data]
-                    data += new_data
+                    for rel2_tuple in rel2_tuples:
+                        res = select(rel1, att1, "=", rel2_tuple[att2_pos])
+                        new_data = [r + rel2_tuple for r in res]
+                        new_data = [nd[:att1_pos] + nd[att1_pos+1:] for nd in new_data]
+                        data += new_data
+        else:
+            with open(os.path.join(DATA_PATH, rel1, PAGE_LINK)) as pl1:
+                rel1_page_files = json.loads(pl1.readlines()[0])
+
+            for rel1_page_file in rel1_page_files:
+                with open(os.path.join(DATA_PATH, rel1, rel1_page_file)) as pg1:
+                    rel1_tuples = json.loads(pg1.readlines()[0])
+                    for rel1_tuple in rel1_tuples:
+                        res = select(rel2, att2, "=", rel1_tuple[att1_pos])
+                        new_data = [rel1_tuple + r for r in res]
+                        new_data = [nd[:att1_pos] + nd[att1_pos+1:] for nd in new_data]
+                        data += new_data
+    else:
+        with open(os.path.join(DATA_PATH, rel1, PAGE_LINK)) as pl1, open(os.path.join(DATA_PATH, rel2, PAGE_LINK)) as pl2:
+            rel1_page_files = json.loads(pl1.readlines()[0])
+            rel2_page_files = json.loads(pl2.readlines()[0])
+
+        for rel1_page_file in rel1_page_files:
+            with open(os.path.join(DATA_PATH, rel1, rel1_page_file)) as pg1:
+                rel1_tuples = json.loads(pg1.readlines()[0])
+
+                for rel2_page_file in rel2_page_files:
+                    with open(os.path.join(DATA_PATH, rel2, rel2_page_file)) as pg2:
+                        rel2_tuples = json.loads(pg2.readlines()[0])
+                        new_data = [t1 + t2 for t1 in rel1_tuples for t2 in rel2_tuples if t1[att1_pos] == t2[att2_pos]]
+                        new_data = [nd[:att1_pos] + nd[att1_pos+1:] for nd in new_data]
+                        data += new_data
 
     res = name_the_new_relation_v2(rel1, rel2)
     update_schemas(res, new_schema)
