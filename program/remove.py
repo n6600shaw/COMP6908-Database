@@ -84,4 +84,5 @@ def removeTable(rel):
 
 
 if __name__ == "__main__":
-    removeTable("Supply_tmp")
+    #removeTable("Supply_tmp")
+    removeTree("Supply", "sid")
