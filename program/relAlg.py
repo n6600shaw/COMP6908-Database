@@ -59,7 +59,7 @@ unclustered_index = [
 xid_att = ["sid", "pid"]
 
 
-def get_tuples_by_ci(leaf_node, rel, val, op):
+def get_tuples_by_clustered_index(leaf_node, rel, val, op):
     res = []
     content = leaf_node[LEAF_NODE.CONTENT.value]
     counter = 0
@@ -196,7 +196,7 @@ def search(pointer, rel, res, direction=DIRECTION.LEFT):
     return res
 
 
-def get_tuples_by_ui(leaf_node, rel, val, op):
+def get_tuples_by_unclustered_index(leaf_node, rel, val, op):
     res = []
     counter = 0
     content = leaf_node[LEAF_NODE.CONTENT.value]
@@ -243,7 +243,6 @@ def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX, att_type=
     res = None
 
     counter = 1
-    res_count = 0
     with open(os.path.join(INDEX_PATH, filename)) as f:
         info = f.readlines()[0]
         data = json.loads(info)
@@ -272,10 +271,10 @@ def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX, att_type=
         else:
             counter = 0
             if index_type == INDEX_TYPE.CLUSTERED_INDEX:
-                res, res_count = get_tuples_by_ci(data, rel, val, op)
+                res, res_count = get_tuples_by_clustered_index(data, rel, val, op)
                 counter += res_count
             else:
-                res, res_count = get_tuples_by_ui(data, rel, val, op)
+                res, res_count = get_tuples_by_unclustered_index(data, rel, val, op)
                 counter += res_count
 
     return res, counter
@@ -299,7 +298,6 @@ def get_page():
 
 def select(rel, att, op, val):
     counter = 0
-    res = None
     tree_root = None
     with open(os.path.join(INDEX_PATH, INDEX_DIRECTORY)) as id_:
         indices = json.loads(id_.readlines()[0])
@@ -334,27 +332,57 @@ def select(rel, att, op, val):
         with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
             content = pl.readlines()[0]
             pages = json.loads(content)
+
+        att_pos = schema.index(att)
+        if op == '<':
             for page in pages:
                 counter += 1
                 with open(os.path.join(DATA_PATH, rel, page)) as pg:
                     page_content = pg.readlines()[0]
                     page_data = json.loads(page_content)
-                    data += page_data
-
-            df = pd.DataFrame(data, columns=schema)
-            if op == '<':
-                df = df.loc[df[att] < val]
-            elif op == '<=':
-                df = df.loc[df[att] <= val]
-            elif op == '=':
-                df = df.loc[df[att] == val]
-            elif op == '>':
-                df = df.loc[df[att] > val]
-            elif op == '>=':
-                df = df.loc[df[att] >= val]
-            else:
-                raise Exception('Invalid op value!!!')
-            res = df.values.tolist()
+                    new_data = [pd for pd in page_data if pd[att_pos] < val]
+                    data += new_data
+                    if len(new_data) < 2:
+                        break
+        elif op == '<=':
+            for page in pages:
+                counter += 1
+                with open(os.path.join(DATA_PATH, rel, page)) as pg:
+                    page_content = pg.readlines()[0]
+                    page_data = json.loads(page_content)
+                    new_data = [pd for pd in page_data if pd[att_pos] <= val]
+                    data += new_data
+                    if len(new_data) < 2:
+                        break
+        elif op == '=':
+            for page in pages:
+                counter += 1
+                with open(os.path.join(DATA_PATH, rel, page)) as pg:
+                    page_content = pg.readlines()[0]
+                    page_data = json.loads(page_content)
+                    new_data = [pd for pd in page_data if pd[att_pos] == val]
+                    data += new_data
+                    if page_data[0] > val or page_data[1] > val:
+                        break
+        elif op == '>':
+            for page in pages:
+                counter += 1
+                with open(os.path.join(DATA_PATH, rel, page)) as pg:
+                    page_content = pg.readlines()[0]
+                    page_data = json.loads(page_content)
+                    new_data = [pd for pd in page_data if pd[att_pos] > val]
+                    data += new_data
+        elif op == '>=':
+            for page in pages:
+                counter += 1
+                with open(os.path.join(DATA_PATH, rel, page)) as pg:
+                    page_content = pg.readlines()[0]
+                    page_data = json.loads(page_content)
+                    new_data = [pd for pd in page_data if pd[att_pos] >= val]
+                    data += new_data
+        else:
+            raise Exception('Invalid op value!!!')
+        res = data
 
         print("Without B+_tree, the cost of searching {att} {op} {val} on {rel} is {value} pages".format(rel=rel,
                                                                                                          att=att,
@@ -423,8 +451,8 @@ def project(rel, attList):
     for page_file in page_files:
         with open(os.path.join(tmp_path, page_file)) as f:
             content = f.readlines()[0]
-            two_tuples = json.loads(content)
-            data += two_tuples
+            page_data = json.loads(content)
+            data += page_data
 
     schema = get_schema(rel)
     df = pd.DataFrame(data, columns=schema)
