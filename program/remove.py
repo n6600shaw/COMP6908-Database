@@ -6,6 +6,7 @@ DATA_PATH = "../data/"
 INDEX_PATH = "../index/"
 INDEX_DIRECTORY = "directory.txt"
 PAGE_POOL = "pagePool.txt"
+PAGE_LINK = "pageLink.txt"
 SCHEMAS = "schemas.txt"
 
 TYPE_POS = 0
@@ -53,16 +54,16 @@ def removeTree(rel, att):
 def removeTable(rel):
     path = os.path.join(DATA_PATH, rel)
     if os.path.exists(path):
-        page_files = []
-        for (dirpath, dirnames, filenames) in os.walk(path):
-            page_files = filenames
+        with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
+            content = pl.readlines()[0]
+            pages = json.loads(content)
 
         with open(os.path.join(DATA_PATH, PAGE_POOL)) as pp:
             content = pp.readlines()[0]
             page_pool = json.loads(content)
 
         with open(os.path.join(DATA_PATH, PAGE_POOL), "w") as pp:
-            res = json.dumps(page_pool + page_files)
+            res = json.dumps(page_pool + pages)
             pp.write(res)
 
         with open(os.path.join(DATA_PATH, SCHEMAS)) as sc:
