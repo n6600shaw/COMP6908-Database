@@ -414,6 +414,7 @@ def select(rel, att, op, val):
                                                                                                          val=val,
                                                                                                          value=counter))
 
+    update_schemas(rel + "_tmp", schema)
     write_to_pages(rel, res)
 
     return rel
@@ -503,6 +504,12 @@ def name_the_new_relation_v2(rel1, rel2):
 
 
 def join(rel1, att1, rel2, att2):
+    tmp_rel1_path = os.path.join(DATA_PATH, rel1 + "_tmp")
+    if os.path.exists(tmp_rel1_path):
+        rel1 = rel1 + "_tmp"
+    tmp_rel2_path = os.path.join(DATA_PATH, rel2 + "_tmp")
+    if os.path.exists(tmp_rel2_path):
+        rel2 = rel2 + "_tmp"
     schema1 = get_schema(rel1)
     schema2 = get_schema(rel2)
     att1_pos = schema1.index(att1)
@@ -515,38 +522,38 @@ def join(rel1, att1, rel2, att2):
     with open(os.path.join(INDEX_PATH, INDEX_DIRECTORY)) as id_:
         indices = json.loads(id_.readlines()[0])
         for index in indices:
-            if index[RELATION_POS] == rel1 and index[ATTR_POS] == att1:
-                tree_rel, tree_root = rel1, index[ROOT_POS]
-                break
+            # if index[RELATION_POS] == rel1 and index[ATTR_POS] == att1:
+            #     tree_rel, tree_root = rel1, index[ROOT_POS]
+            #     break
             if index[RELATION_POS] == rel2 and index[ATTR_POS] == att2:
                 tree_rel, tree_root = rel2, index[ROOT_POS]
                 break
 
     if tree_root:
-        if tree_rel == rel1:
-            with open(os.path.join(DATA_PATH, rel2, PAGE_LINK)) as pl2:
-                rel2_page_files = json.loads(pl2.readlines()[0])
+        # if tree_rel == rel1:
+        #     with open(os.path.join(DATA_PATH, rel2, PAGE_LINK)) as pl2:
+        #         rel2_page_files = json.loads(pl2.readlines()[0])
+        #
+        #     for rel2_page_file in rel2_page_files:
+        #         with open(os.path.join(DATA_PATH, rel2, rel2_page_file)) as pg2:
+        #             rel2_tuples = json.loads(pg2.readlines()[0])
+        #             for rel2_tuple in rel2_tuples:
+        #                 res = join_by_index(rel1, att1, rel2_tuple[att2_pos])
+        #                 new_data = [r + rel2_tuple for r in res]
+        #                 new_data = [nd[:att1_pos] + nd[att1_pos+1:] for nd in new_data]
+        #                 data += new_data
+        # else:
+        with open(os.path.join(DATA_PATH, rel1, PAGE_LINK)) as pl1:
+            rel1_page_files = json.loads(pl1.readlines()[0])
 
-            for rel2_page_file in rel2_page_files:
-                with open(os.path.join(DATA_PATH, rel2, rel2_page_file)) as pg2:
-                    rel2_tuples = json.loads(pg2.readlines()[0])
-                    for rel2_tuple in rel2_tuples:
-                        res = join_by_index(rel1, att1, rel2_tuple[att2_pos])
-                        new_data = [r + rel2_tuple for r in res]
-                        new_data = [nd[:att1_pos] + nd[att1_pos+1:] for nd in new_data]
-                        data += new_data
-        else:
-            with open(os.path.join(DATA_PATH, rel1, PAGE_LINK)) as pl1:
-                rel1_page_files = json.loads(pl1.readlines()[0])
-
-            for rel1_page_file in rel1_page_files:
-                with open(os.path.join(DATA_PATH, rel1, rel1_page_file)) as pg1:
-                    rel1_tuples = json.loads(pg1.readlines()[0])
-                    for rel1_tuple in rel1_tuples:
-                        res = join_by_index(rel2, att2, rel1_tuple[att1_pos])
-                        new_data = [rel1_tuple + r for r in res]
-                        new_data = [nd[:att1_pos] + nd[att1_pos+1:] for nd in new_data]
-                        data += new_data
+        for rel1_page_file in rel1_page_files:
+            with open(os.path.join(DATA_PATH, rel1, rel1_page_file)) as pg1:
+                rel1_tuples = json.loads(pg1.readlines()[0])
+                for rel1_tuple in rel1_tuples:
+                    res = join_by_index(rel2, att2, rel1_tuple[att1_pos])
+                    new_data = [rel1_tuple + r for r in res]
+                    new_data = [nd[:att1_pos] + nd[att1_pos+1:] for nd in new_data]
+                    data += new_data
     else:
         with open(os.path.join(DATA_PATH, rel1, PAGE_LINK)) as pl1, open(os.path.join(DATA_PATH, rel2, PAGE_LINK)) as pl2:
             rel1_page_files = json.loads(pl1.readlines()[0])
