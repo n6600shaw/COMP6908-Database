@@ -61,14 +61,13 @@ def displayTree(fname="pg06.txt"):
 
 def displayTable(rel, fname):
     path = os.path.join(DATA_PATH, rel)
-    files = []
-    for (dirpath, dirnames, filenames) in os.walk(path):
-        files = filenames
+    with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
+        content = pl.readlines()[0]
+        pages = json.loads(content)
 
-    page_files = [file for file in files if file != PAGE_LINK]
     data = []
-    for page_file in page_files:
-        with open(os.path.join(path, page_file)) as f:
+    for page in pages:
+        with open(os.path.join(path, page)) as f:
             content = f.readlines()[0]
             two_tuples = json.loads(content)
             data += two_tuples
