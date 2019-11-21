@@ -40,7 +40,7 @@ class INDEX_TYPE(Enum):
     UNCLUSTERED_INDEX = 1
 
 
-class ATT_TYPE(Enum):
+class ATT_CATEGORY(Enum):
     XID = 0
     OTHER = 1
 
@@ -50,6 +50,11 @@ class DIRECTION(Enum):
     RIGHT = 1
 
 
+class ATT_TYPE(Enum):
+    STRING = "str"
+    INTEGER = "int"
+
+
 clustered_index = [("Products", "pid"), ("Suppliers", "sid"), ("Supply", "sid")]
 unclustered_index = [
     ("Products", "pname"), ("Products", "color"),
@@ -57,6 +62,9 @@ unclustered_index = [
     ("Supply", "pid"), ("Supply", "cost")
 ]
 xid_att = ["sid", "pid"]
+att_type = {"sid": ATT_TYPE.STRING.value, "sname": ATT_TYPE.STRING.value, "address": ATT_TYPE.STRING.value,
+            "pid": ATT_TYPE.STRING.value, "pname": ATT_TYPE.STRING.value, "color": ATT_TYPE.STRING.value,
+            "cost": ATT_TYPE.INTEGER.value}
 
 
 def get_tuples_by_clustered_index(leaf_node, rel, val, op):
@@ -239,7 +247,7 @@ def convert_id_to_int(id_):
     return int(id_[1:])
 
 
-def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX, att_type=ATT_TYPE.OTHER):
+def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX, att_type=ATT_CATEGORY.OTHER):
     res = None
 
     counter = 1
@@ -251,9 +259,9 @@ def dfs(filename, rel, val, op, index_type=INDEX_TYPE.CLUSTERED_INDEX, att_type=
             located = False
             for index, value in enumerate(content):
                 if not value.endswith(".txt"):
-                    if att_type == ATT_TYPE.XID:
+                    if att_type == ATT_CATEGORY.XID:
                         int_val, int_value = convert_id_to_int(val), convert_id_to_int(value)
-                    input_less_than_value = int_val < int_value if att_type == ATT_TYPE.XID else val < value
+                    input_less_than_value = int_val < int_value if att_type == ATT_CATEGORY.XID else val < value
                     if input_less_than_value:
                         res, res_count = dfs(content[index - 1], rel, val, op, index_type, att_type)
                         located = True
@@ -306,9 +314,9 @@ def join_by_index(rel, att, val):
                 break
 
     if att in xid_att:
-        att_type = ATT_TYPE.XID
+        att_type = ATT_CATEGORY.XID
     else:
-        att_type = ATT_TYPE.OTHER
+        att_type = ATT_CATEGORY.OTHER
 
     index_type = INDEX_TYPE.UNCLUSTERED_INDEX
     for ci in clustered_index:
@@ -331,9 +339,9 @@ def select(rel, att, op, val):
                 break
 
     if att in xid_att:
-        att_type = ATT_TYPE.XID
+        att_type = ATT_CATEGORY.XID
     else:
-        att_type = ATT_TYPE.OTHER
+        att_type = ATT_CATEGORY.OTHER
 
     schema = get_schema(rel)
 
@@ -456,8 +464,7 @@ def write_to_pages(rel, res):
 def update_schemas(rel, attList):
     new_items = []
     for index, value in enumerate(attList):
-        # TODO: get the correct type for each field
-        new_items.append([rel, value, "str", index])
+        new_items.append([rel, value, att_type[value], index])
     with open(os.path.join(DATA_PATH, SCHEMAS)) as sc:
         content = sc.readlines()[0]
         schemas = json.loads(content)
