@@ -1,7 +1,6 @@
-import TreeNode as tn
 import json
-import ast
-import math
+
+import TreeNode as tn
 
 DATA_PATH = "../data/"
 INDEX_PATH = "../index/"
@@ -37,4 +36,4 @@ def buildTree(rel, att, od):
 
 
 if __name__ == '__main__':
-    buildTree('Supply', 'sid', 2)
+    buildTree('Suppliers', 'sid', 2)

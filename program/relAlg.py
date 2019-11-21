@@ -296,6 +296,30 @@ def get_page():
     return page
 
 
+def join_by_index(rel, att, val):
+    tree_root = None
+    with open(os.path.join(INDEX_PATH, INDEX_DIRECTORY)) as id_:
+        indices = json.loads(id_.readlines()[0])
+        for index in indices:
+            if index[RELATION_POS] == rel and index[ATTR_POS] == att:
+                tree_root = index[ROOT_POS]
+                break
+
+    if att in xid_att:
+        att_type = ATT_TYPE.XID
+    else:
+        att_type = ATT_TYPE.OTHER
+
+    index_type = INDEX_TYPE.UNCLUSTERED_INDEX
+    for ci in clustered_index:
+        if rel == ci[0] and att == ci[1]:
+            index_type = INDEX_TYPE.CLUSTERED_INDEX
+            break
+
+    res, _ = dfs(tree_root, rel, val, "=", index_type, att_type)
+    return res
+
+
 def select(rel, att, op, val):
     counter = 0
     tree_root = None
@@ -409,6 +433,9 @@ def write_to_pages(rel, res):
     rel_name = rel
     if os.path.exists(os.path.join(DATA_PATH, rel)):
         rel_name = rel + "_tmp"
+        if os.path.exists(os.path.join(DATA_PATH, rel_name)):
+            return
+
         os.mkdir(os.path.join(DATA_PATH, rel_name))
     else:
         os.mkdir(os.path.join(DATA_PATH, rel))
@@ -449,7 +476,7 @@ def project(rel, attList):
 
     data = []
     for page_file in page_files:
-        with open(os.path.join(tmp_path, page_file)) as f:
+        with open(os.path.join(path, page_file)) as f:
             content = f.readlines()[0]
             page_data = json.loads(content)
             data += page_data
@@ -472,7 +499,7 @@ def name_the_new_relation(attList, rel):
 
 
 def name_the_new_relation_v2(rel1, rel2):
-    return rel1[3:] + "_" + rel2[3:]
+    return rel1[:3] + "_" + rel2[:3]
 
 
 def join(rel1, att1, rel2, att2):
@@ -481,7 +508,7 @@ def join(rel1, att1, rel2, att2):
     att1_pos = schema1.index(att1)
     att2_pos = schema2.index(att2)
     schema = schema1 + schema2
-    new_schema = schema.pop(att1_pos)
+    schema.pop(att1_pos)
 
     data = []
     tree_root = None
@@ -504,7 +531,7 @@ def join(rel1, att1, rel2, att2):
                 with open(os.path.join(DATA_PATH, rel2, rel2_page_file)) as pg2:
                     rel2_tuples = json.loads(pg2.readlines()[0])
                     for rel2_tuple in rel2_tuples:
-                        res = select(rel1, att1, "=", rel2_tuple[att2_pos])
+                        res = join_by_index(rel1, att1, rel2_tuple[att2_pos])
                         new_data = [r + rel2_tuple for r in res]
                         new_data = [nd[:att1_pos] + nd[att1_pos+1:] for nd in new_data]
                         data += new_data
@@ -516,7 +543,7 @@ def join(rel1, att1, rel2, att2):
                 with open(os.path.join(DATA_PATH, rel1, rel1_page_file)) as pg1:
                     rel1_tuples = json.loads(pg1.readlines()[0])
                     for rel1_tuple in rel1_tuples:
-                        res = select(rel2, att2, "=", rel1_tuple[att1_pos])
+                        res = join_by_index(rel2, att2, rel1_tuple[att1_pos])
                         new_data = [rel1_tuple + r for r in res]
                         new_data = [nd[:att1_pos] + nd[att1_pos+1:] for nd in new_data]
                         data += new_data
@@ -537,7 +564,7 @@ def join(rel1, att1, rel2, att2):
                         data += new_data
 
     res = name_the_new_relation_v2(rel1, rel2)
-    update_schemas(res, new_schema)
+    update_schemas(res, schema)
     write_to_pages(res, data)
 
     return res
