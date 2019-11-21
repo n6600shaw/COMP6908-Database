@@ -362,7 +362,7 @@ def select(rel, att, op, val):
                     page_data = json.loads(page_content)
                     new_data = [pd for pd in page_data if pd[att_pos] == val]
                     data += new_data
-                    if page_data[0] > val or page_data[1] > val:
+                    if len([pd for pd in page_data if pd[att_pos] > val]) > 0:
                         break
         elif op == '>':
             for page in pages:
