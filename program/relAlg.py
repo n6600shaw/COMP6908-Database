@@ -1,70 +1,11 @@
 import json
 import os
-from enum import Enum
 
 import pandas as pd
 
-DATA_PATH = "../data/"
-INDEX_PATH = "../index/"
-INDEX_DIRECTORY = "directory.txt"
-PAGE_LINK = "pageLink.txt"
-SCHEMAS = "schemas.txt"
-PAGE_POOL = "pagePool.txt"
-
-TYPE_POS = 0
-CONTENT_POS = 2
-RELATION_POS = 0
-ATTR_POS = 1
-ROOT_POS = 2
-ORDER_POS = 3
-
-CAPACITY = 2
-
-
-class INTERNAL_NODE(Enum):
-    NODE_TYPE = 0
-    PARENTAL_POINTER = 1
-    CONTENT = 2
-
-
-class LEAF_NODE(Enum):
-    NODE_TYPE = 0
-    PARENTAL_POINTER = 1
-    LEFT_POINTER = 2
-    RIGHT_POINTER = 3
-    CONTENT = 4
-
-
-class INDEX_TYPE(Enum):
-    CLUSTERED_INDEX = 0
-    UNCLUSTERED_INDEX = 1
-
-
-class ATT_CATEGORY(Enum):
-    XID = 0
-    OTHER = 1
-
-
-class DIRECTION(Enum):
-    LEFT = 0
-    RIGHT = 1
-
-
-class ATT_TYPE(Enum):
-    STRING = "str"
-    INTEGER = "int"
-
-
-clustered_index = [("Products", "pid"), ("Suppliers", "sid"), ("Supply", "sid")]
-unclustered_index = [
-    ("Products", "pname"), ("Products", "color"),
-    ("Suppliers", "sname"), ("Suppliers", "address"),
-    ("Supply", "pid"), ("Supply", "cost")
-]
-xid_att = ["sid", "pid"]
-att_type = {"sid": ATT_TYPE.STRING.value, "sname": ATT_TYPE.STRING.value, "address": ATT_TYPE.STRING.value,
-            "pid": ATT_TYPE.STRING.value, "pname": ATT_TYPE.STRING.value, "color": ATT_TYPE.STRING.value,
-            "cost": ATT_TYPE.INTEGER.value}
+from program.types import CAPACITY, DATA_PATH, INDEX_PATH, INDEX_DIRECTORY, PAGE_LINK, SCHEMAS, PAGE_POOL, ORDER_POS, \
+    TYPE_POS, CONTENT_POS, RELATION_POS, ATTR_POS, ROOT_POS, LEAF_NODE, INDEX_TYPE, ATT_CATEGORY, DIRECTION, \
+    clustered_index, xid_att, att_type
 
 
 def get_tuples_by_clustered_index(leaf_node, rel, val, op):

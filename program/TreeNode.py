@@ -1,13 +1,7 @@
 import json
-import ast
 import math
-import os
 
-DATA_PATH = "../data/"
-INDEX_PATH = "../index/"
-PAGE_LINK = "pageLink.txt"
-SCHEMAS = "schemas.txt"
-PAGE_POOL = 'pagePool.txt'
+from program.types import DATA_PATH, INDEX_PATH, PAGE_LINK, SCHEMAS, PAGE_POOL
 
 
 class Node:

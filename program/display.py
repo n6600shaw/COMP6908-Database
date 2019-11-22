@@ -1,19 +1,9 @@
 import json
 import os
 
-DATA_PATH = "../data/"
-INDEX_PATH = "../index/"
-OUTPUT_PATH = "../queryOutput/"
-TREE_PIC_PATH = "../treePic/"
-PAGE_LINK = "pageLink.txt"
-INDEX_DIRECTORY = "directory.txt"
-
-TYPE_POS = 0
-CONTENT_POS = 2
-
-RELATION_POS = 0
-ATTR_POS = 1
-ROOT_POS = 2
+from program.relAlg import get_schema
+from program.types import TYPE_POS, CONTENT_POS, RELATION_POS, ATTR_POS, ROOT_POS, OUTPUT_PATH, DATA_PATH, INDEX_PATH, \
+    TREE_PIC_PATH, PAGE_LINK, INDEX_DIRECTORY
 
 
 def dfs(filename, indent_no, distfile):
@@ -75,8 +65,37 @@ def displayTable(rel, fname):
     if not os.path.exists(OUTPUT_PATH):
         os.mkdir(os.path.join(OUTPUT_PATH))
     with open(os.path.join(OUTPUT_PATH, fname), "a+") as qr:
-        qr.write(json.dumps(data) + "\r\n\r\n")
+        for d in data:
+            qr.write(json.dumps(d) + "\r\n")
+
+        qr.write("\r\n\r\n")
+
+
+def display_schema(rel, fname):
+    schema = get_schema(rel)
+    with open(os.path.join(OUTPUT_PATH, fname), "a+") as qr:
+        qr.write(json.dumps(schema) + "\r\n")
+
+
+def printTable(rel):
+    path = os.path.join(DATA_PATH, rel)
+    with open(os.path.join(DATA_PATH, rel, PAGE_LINK)) as pl:
+        content = pl.readlines()[0]
+        pages = json.loads(content)
+
+    data = []
+    for page in pages:
+        with open(os.path.join(path, page)) as f:
+            content = f.readlines()[0]
+            two_tuples = json.loads(content)
+            data += two_tuples
+
+    for d in data:
+        print(d)
 
 
 if __name__ == "__main__":
-    displayTree("pg80.txt")
+    # displayTree("pg80.txt")
+    printTable("Products")
+    printTable("Suppliers")
+    printTable("Supply")

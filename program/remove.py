@@ -2,18 +2,8 @@ import json
 import os
 import shutil
 
-DATA_PATH = "../data/"
-INDEX_PATH = "../index/"
-INDEX_DIRECTORY = "directory.txt"
-PAGE_POOL = "pagePool.txt"
-PAGE_LINK = "pageLink.txt"
-SCHEMAS = "schemas.txt"
-
-TYPE_POS = 0
-CONTENT_POS = 2
-RELATION_POS = 0
-ATTR_POS = 1
-ROOT_POS = 2
+from program.types import DATA_PATH, INDEX_PATH, INDEX_DIRECTORY, PAGE_POOL, PAGE_LINK, SCHEMAS, TYPE_POS, \
+    CONTENT_POS, RELATION_POS, ATTR_POS, ROOT_POS
 
 
 def dfs(filename):
@@ -84,5 +74,5 @@ def removeTable(rel):
 
 
 if __name__ == "__main__":
-    #removeTable("Supply_tmp")
-    removeTree("Supply", "sid")
+    removeTable("Supply_tmp")
+    # removeTree("Supply", "sid")

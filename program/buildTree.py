@@ -1,12 +1,7 @@
 import json
 
 import TreeNode as tn
-
-DATA_PATH = "../data/"
-INDEX_PATH = "../index/"
-PAGE_LINK = "pageLink.txt"
-SCHEMAS = "schemas.txt"
-PAGE_POOL = 'pagePool.txt'
+from program.types import INDEX_PATH
 
 
 def buildTree(rel, att, od):
